@@ -18,7 +18,7 @@
 | **Database** | Supabase, Singapore region (Free tier sufficient for 2–3 staff) |
 | **Auth identity** | Supabase Auth + Google OAuth + WebAuthn passkeys |
 | **Auth network gate** | Cloudflare Access (configured at go-live by Super Admin) |
-| **Email domain policy** | NO whitelist in app code — multiple domains supported |
+| **Email domain policy** | Allowlisted Workspace domains — enforced at 3 layers (Cloudflare Access · Google OAuth `hd` · server callback) |
 | **Session cookie scope** | `.meirverse.app` |
 | **SSO to CRMs** | Signed-JWT bridge (RS256, 5-min TTL, audience-bound) |
 | **Permission model** | Many-to-many Departments × Role (Director/Manager/Staff/Viewer) |
@@ -41,7 +41,7 @@ This is the definitive architecture pre-build. Locks since v3:
 2. **Cubo / Caerus / MADE are full Meirverse entities** — they participate in administrative backend (HR, accounting, admin) via the standard Cluster 1 + AutoCount pattern, alongside every other entity. They do NOT have their own subdomains under `meirverse.app` yet; staff sign in via `dashboard.meirverse.app` like all other Meirverse staff. Operational subdomains can be added later if a venture entity grows to need its own CRM.
 3. **AutoCount is the system of record for money** — accessed via Quick Launch tile, not via integration. No widget on dashboard.
 4. **Permission model = Departments × Role (4 levels)** — users hold many `(department, role)` assignments. Sebestian is Universal Super Admin and bypasses all checks. Departments are extensible.
-5. **Multi-domain email support** — no `@meirverse.app` whitelist in app code. Cloudflare Access (network layer, configured at go-live) is the access gate; the app authenticates any identity Google verifies.
+5. **Multi-domain Workspace whitelist · three-layer enforcement.** Allowlisted Google Workspace domains are gated at three independent layers: (1) **Cloudflare Access** policy at the network edge; (2) **Google OAuth `hd` parameter** on the auth request for the primary shared Workspace tenant; (3) **server-side domain check** in the auth callback comparing the returned `email`/`hd` against an `ALLOWED_EMAIL_DOMAINS` env var that mirrors the Cloudflare list. The allowlist is not hard-coded in source; all three layers must be kept in sync. Workspace topology is hybrid — some entities share a single tenant, ventures (Cubo, Caerus, MADE) may run independent tenants — and Layer 3 is what covers the independent tenants since `hd` accepts only one value.
 6. **Entity catalog + cluster pluggability** — entities (12 today, extensible) are first-class records. Each cluster declares which entities can participate via `cluster_entities`. This replaces hardcoded brand enums.
 
 ---
@@ -123,8 +123,8 @@ Three layers, each answering a different question.
 ┌─────────────────────────────────────────────────────────────┐
 │  Layer 2 · Identity · Supabase Auth                          │
 │  Q: Can you prove who you are?                               │
-│  Google OAuth (any email) + WebAuthn passkeys.               │
-│  No domain restriction in app code.                          │
+│  Google OAuth (Workspace-allowlisted) + WebAuthn passkeys.   │
+│  3-layer domain whitelist — see §1 lock 5.                   │
 └─────────────────────────────────────────────────────────────┘
                             │
                             ▼
@@ -358,7 +358,12 @@ Don't add auth yet — that's Phase 2.2.
 1. Configure Google OAuth in Google Cloud Console
    - Redirect URI: `https://dashboard.meirverse.app/auth/callback`
    - JS origin: `dashboard.meirverse.app`
-   - **DO NOT** set "hosted domain" restriction — leave open for multi-domain
+   - Pass `hd=<primary-shared-workspace-domain>` on the auth request URL to bind
+     primary-tenant logins to Google's IdP-enforced gate (Layer 2). Do **NOT**
+     set the OAuth *client*'s single-hosted-domain restriction — that locks the
+     client to one Workspace and would block users from independent venture
+     tenants (Cubo, Caerus, MADE). Independent tenants are validated by the
+     server-side `ALLOWED_EMAIL_DOMAINS` check in `/auth/callback` (Layer 3).
 2. Configure Supabase Auth → Google provider
 3. Build `/login` page with Google + passkey buttons
 4. Add middleware protecting `(dashboard)` group
@@ -371,8 +376,13 @@ Next.js 14 + Supabase Auth at dashboard.meirverse.app.
 Add Google Login + WebAuthn passkey login.
 
 CRITICAL constraints:
-- DO NOT restrict by email domain — accept ANY Google-authenticated identity.
-  Domain allowlist will be enforced at Cloudflare Access (network layer), not in code.
+- Domain allowlist enforced at THREE layers (defense in depth):
+  (1) Cloudflare Access policy at the network edge — configured in Cloudflare;
+  (2) Google OAuth `hd` parameter on the auth request for the primary shared
+      Workspace tenant — set when building the OAuth URL, not in client config;
+  (3) Server-side check in /auth/callback: reject if decoded.email's domain is
+      not in process.env.ALLOWED_EMAIL_DOMAINS (comma-separated allowlist).
+      On rejection: sign out + redirect to /login?error=domain_not_allowed.
 - Cookie domain MUST be .meirverse.app so subdomains share session.
 
 Build:
@@ -930,11 +940,11 @@ The last line matters. Claude Code (like all of us) gets enthusiastic. Bounding 
 | Sub-brands under Residential — names? | Anytime | Pending |
 | Venture Build entities — do any need Cluster 2 or Cluster 3 participation at launch? | Before Week 8 | Default: Cluster 1 only |
 | WhatsApp business entity (which Meir entity holds Meta accounts?) | Before Week 8 | Pending |
-| Cloudflare Access allowlist rules | Before go-live (Week 7) | Sebestian to define |
+| Canonical Workspace domain allowlist (Cloudflare Access · Google `hd` · server callback) | Before Phase 2.2 (Week 2) | Sebestian to define |
 | Real names for the 7 CRM subdomains | Before Week 5 | Pending |
 | Approval policies (who approves what) | Before approvals module | Pending |
 | Notification policies (who gets notified when) | Before notifications module | Pending |
 
 ---
 
-*Document version 4.2 · 21 May 2026 · Venture entities corrected to full Meirverse citizens · entity catalog + cluster_entities pluggability added · Ventures Tracker module removed · Living document — update freely as build progresses*
+*Document version 4.3 · 23 May 2026 · Multi-domain whitelist clarified to three-layer enforcement (Cloudflare Access · Google OAuth `hd` · server callback) · hybrid Workspace topology captured · §1 TL;DR + lock 5, §4 Layer 2 box, §8 Phase 2.2 step 1 + Claude Code prompt, §15 open questions all updated accordingly · Living document — update freely as build progresses*
