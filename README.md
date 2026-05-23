@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Meirverse Dashboard
 
-## Getting Started
+Orchestration layer for the Meirverse group of companies, deployed at
+`dashboard.meirverse.app`. See [ARCHITECTURE.md](./ARCHITECTURE.md) for the
+locked v4.2 architecture and [CRM-INVENTORY.md](./CRM-INVENTORY.md) for the
+SSO target inventory.
 
-First, run the development server:
+## Stack
+
+Next.js 14 (App Router) · TypeScript (strict) · Tailwind 3 · Supabase
+(Singapore) · Vercel · Cloudflare Access · Signed-JWT (RS256) bridge to CRMs.
+
+## Local development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.local.example .env.local   # fill in Supabase credentials
+npm run dev                         # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Current phase
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Phase 2.1 · Foundation** — Local scaffold complete. Awaiting Supabase
+project creation, Vercel deploy, and DNS for `dashboard.meirverse.app`.
+Auth (Phase 2.2) lands in Week 2.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deferred cleanups
 
-## Learn More
+Two items were left in place during the autonomous Phase 2.1 scaffold:
 
-To learn more about Next.js, take a look at the following resources:
+1. **Unused Geist fonts.** `app/fonts/GeistVF.woff` and
+   `app/fonts/GeistMonoVF.woff` (~120KB) are no longer referenced — Phase
+   2.1 switched the root layout to Fraunces + Manrope via
+   `next/font/google`. Remove when ready:
+   ```bash
+   rm -r app/fonts
+   ```
+2. **Dashboard route group.** `app/page.tsx` currently serves the
+   placeholder home directly. Phase 2.2 will move it into
+   `app/(dashboard)/page.tsx` once `middleware.ts` enforces auth on that
+   group.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Documentation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — locked architecture decisions (v4.2)
+- [CRM-INVENTORY.md](./CRM-INVENTORY.md) — SSO targets, recon checklists,
+  migration patterns
