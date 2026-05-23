@@ -28,7 +28,7 @@
 | 3 | 2 | `engagement.meirverse.app` | Engagement Letter | Deal pipeline stage 2 | **Built** | **TBD — recon needed** | **TBD — recon needed** | `engagement` |
 | 4 | 2 | `prospect.meirverse.app` | Prospect DB | Deal pipeline stage 3 | Planned | Next.js + Supabase | Bridge-only | `prospect-db` |
 | 5 | 2 | `specsheet.meirverse.app` | Spec Sheet | Deal pipeline stage 4 (onboarding) | Planned | Next.js + Supabase | Bridge-only | `spec-sheet` |
-| 6 | 3 | `construction.meirverse.app` | Construction ERP | Project delivery (H+E+C+A) | **Built** | **TBD — recon needed** | **TBD — recon needed** | `construction-erp` |
+| 6 | 3 | `projectserp.meirverse.app` | Construction ERP (Projects ERP) | Project delivery (H+E+C+A) | **Built once (Vite+Workers+D1, 2026-05-20); rebuild in progress on Next.js + Supabase + Vercel — see detail sheet** | Next.js 14 + Supabase Postgres + Supabase Storage (Vercel-hosted) | Bridge-only (SSO from dashboard) | `construction-erp` |
 | 7 | 3 | `propertymgmt.meirverse.app` | Property Management | Tenant management, maintenance (Collective-only) | Planned | Next.js + Supabase | Bridge-only | `property-mgmt` |
 
 **Note:** All working names should be replaced with real product names before Phase 2.5.
@@ -256,27 +256,63 @@ create table deal_stage_history (
 
 ### Cluster 3 · Asset lifecycle
 
-#### Construction ERP (Built · needs retrofit)
+#### Construction ERP / Projects ERP (Rebuild in progress)
 
-- Subdomain: `construction.meirverse.app`
-- Function: Project delivery, construction management
-- Brand scope: H + E + C + A
+- Subdomain: `projectserp.meirverse.app` (working name — confirm spelling before custom domain bind)
+- Function: Project delivery, construction management for Good Class Builders
+- Brand scope: H + E + C + A (entity_id `good-class-builders`)
 - Audience claim: `construction-erp`
-- **Status:** Built — retrofit `/auth/sso` endpoint only (no data migration needed)
-- Stack: **TBD — recon needed**
-- Existing auth: **TBD — recon needed**
+- **Status:** Standalone build at `~/code/gcb-erp` was scaffolded and deployed on 2026-05-20 (Vite + React + Cloudflare Workers + D1 + R2). **Pivot 2026-05-24** — re-scoped as Child 2 of this dashboard; old build paused (see [`~/code/gcb-erp/PIVOT-NOTE.md`](../../code/gcb-erp/PIVOT-NOTE.md)), rebuild in progress on the standard dashboard CRM stack.
+- Stack (new): Next.js 14 (App Router) + TypeScript + Tailwind 3 + Supabase Postgres (Singapore) + Supabase Storage + Vercel + Cloudflare Access
+- Existing auth (old standalone): Custom JWT signed by Cloudflare Worker — abandoned in pivot
+- New auth: SSO bridge only — verifies dashboard-signed JWT via JWKS
 
-**Retrofit plan:**
-- [ ] Reconnaissance (6 questions)
-- [ ] Add `/auth/sso` endpoint
-- [ ] Install JWKS client library for stack
-- [ ] Cache dashboard JWKS, refresh daily
-- [ ] Email-match user lookup (full email)
-- [ ] Map `departments` claim: `operations` → project access; check role for write
-- [ ] Add `sso_issuances` audit log entry on arrival
+**Reconnaissance — already answered (from the legacy build):**
+
+| Question | Answer |
+| -------- | ------ |
+| Q1 Framework / language | **Was** Vite + React 18 + TS + Cloudflare Workers (Hono). **Now rebuilding to** Next.js 14 + TS to match dashboard CRM pattern. |
+| Q2 Current login method | None in production — only the placeholder is deployed. The legacy custom-JWT plan is dropped. |
+| Q3 Source code location | https://github.com/sebestiansoh/gcb-erp (private; will be archived once rebuild reaches parity). New rebuild repo TBD — sibling to this dashboard repo. |
+| Q4 Database location | **Was** Cloudflare D1 (`gcb-erp-production`, APAC, id `b90d5e04-e498-4fb9-9605-98bd83a183a7`) with full 17-table schema applied. **Now moving to** Supabase Postgres (Singapore) — new project to be created during rebuild. |
+| Q5 Active users today | 0 (placeholder only, never went live) |
+| Q6 Who has admin access today | Sebestian only — Cloudflare wrangler-authenticated; legacy GitHub Actions secrets in place. |
+
+**Schema source of truth.** The canonical type definitions live at
+[`~/code/gcb-erp/migration-spec/02-data-schema.ts`](../../code/gcb-erp/migration-spec/02-data-schema.ts)
+and the SQLite migration at
+[`~/code/gcb-erp/workers/migrations/0001_init.sql`](../../code/gcb-erp/workers/migrations/0001_init.sql).
+Both carry over directly to the rebuild — translate SQLite → Postgres
+(boolean columns, `jsonb` for JSON-shaped TEXT, `gen_random_uuid()` for
+PKs, RLS policies added per dashboard pattern).
+
+Note the FK ordering quirk: `subcon_claims.payment_cert_id` references
+`payment_certs(id)`, so `payment_certs` must be declared first. The
+original `02-data-schema.ts` listed them in the wrong order; the
+SQLite migration already reorders. Carry the reorder into the
+Postgres migration.
+
+**Rebuild plan (when dashboard Phase 2.5 SSO bridge lands, weeks 5-7):**
+- [ ] Create new Next.js 14 + TS + Tailwind 3 repo (sibling to meir-dashboard)
+- [ ] Create new Supabase project in Singapore region
+- [ ] Translate `0001_init.sql` (SQLite) → Postgres migration files under `supabase/migrations/`
+- [ ] Add RLS policies to all 17 tables — non-negotiable
+- [ ] Wire Supabase Storage bucket `gcb-erp-photos` (replaces R2)
+- [ ] Add `/auth/sso` route as the ONLY auth path
+- [ ] Install JWKS client; verify against `https://dashboard.meirverse.app/.well-known/jwks.json`
+- [ ] Match users by full email; auto-create on first SSO arrival
+- [ ] Map `departments` claim: `operations` role grants project access; `director` → admin scope inside ERP
+- [ ] Honour `super_admin: true` claim (Sebestian bypass)
+- [ ] Add `sso_issuances` audit log entry on every SSO landing
+- [ ] Carry over the project-level deletion-restriction `.claude/settings.json` from `~/code/gcb-erp/`
 - [ ] Test all 4 roles end-to-end
-- [ ] Deploy
-- [ ] (Optional) Deprecate password login after 30-day grace
+- [ ] Deploy to Vercel; add `projectserp.meirverse.app` custom domain
+- [ ] Configure Cloudflare Access policy in front of the deployment (Layer 1 of the 3-layer auth)
+- [ ] Add Quick Launch tile in dashboard
+- [ ] When at parity: archive `~/code/gcb-erp` on GitHub; tear down Cloudflare Pages, Worker, D1, R2 via Sebestian-run wrangler commands (Claude can't — deletion is denied)
+
+**No password-login fallback needed** — the legacy build never had real
+users on it.
 
 #### Property Management (Planned)
 
@@ -341,7 +377,7 @@ None of these apply at launch. Revisit per-entity after Milestone 2.
 ## SSO rollout sequence
 
 ### Phase A (Weeks 5–7)
-**Slot 1:** Construction ERP retrofit (first reconnaissance-completion wins the slot)
+**Slot 1:** Construction ERP **rebuild** (was retrofit; pivot 2026-05-24 — see Construction ERP detail sheet). Now a greenfield Next.js + Supabase build with `/auth/sso` as the only auth path. Reconnaissance complete; schema lifts from `~/code/gcb-erp/migration-spec/02-data-schema.ts`. The legacy Vite + Cloudflare deploy at `~/code/gcb-erp` stays up as a paused reference until the rebuild reaches parity.
 **Slot 2:** HR greenfield build
 
 ### Phase B (Weeks 8–14)
@@ -359,8 +395,8 @@ None of these apply at launch. Revisit per-entity after Milestone 2.
 
 | Item | Status |
 |---|---|
-| Real names for all 7 CRM subdomains (replace placeholders) | Pending |
-| Reconnaissance: Construction ERP (6 questions) | Pending — gate for Week 5 |
+| Real names for all 7 CRM subdomains (replace placeholders) | Pending — slot 6 (Construction ERP) tentatively `projectserp.meirverse.app`; confirm spelling and case before custom domain bind |
+| Reconnaissance: Construction ERP (6 questions) | ✅ Answered 2026-05-24 — see detail sheet. Legacy standalone build paused; rebuild on Next.js + Supabase + Vercel scheduled for dashboard Phase A weeks 5-7. |
 | Reconnaissance: Termsheet (6 questions) | Pending — gate for Week 9 |
 | Reconnaissance: Engagement Letter (6 questions) | Pending — gate for Week 10 |
 | Cluster 2 `deals` schema fields per stage (detailed) | Pending — Week 8 |
@@ -371,4 +407,6 @@ None of these apply at launch. Revisit per-entity after Milestone 2.
 
 ---
 
-*Document version 4 · 21 May 2026 · Venture Builds entities corrected to full Meirverse citizens · Ventures tracker section replaced with administrative-integration model · Living document · update as inventory matures*
+*Document version 4.1 · 24 May 2026 · Construction ERP (row 6) reconnaissance complete: legacy Vite + Cloudflare Workers + D1 standalone build at `~/code/gcb-erp/` paused, rebuild scheduled on Next.js + Supabase + Vercel for dashboard Phase A weeks 5-7; subdomain working name updated to `projectserp.meirverse.app` · Living document · update as inventory matures*
+
+*Document version 4 · 21 May 2026 · Venture Builds entities corrected to full Meirverse citizens · Ventures tracker section replaced with administrative-integration model*
