@@ -24,21 +24,14 @@ npm run dev                         # http://localhost:3000
 project creation, Vercel deploy, and DNS for `dashboard.meirverse.app`.
 Auth (Phase 2.2) lands in Week 2.
 
-## Deferred cleanups
+## Deferred cleanup
 
-Two items were left in place during the autonomous Phase 2.1 scaffold:
+One item carried into Phase 2.2:
 
-1. **Unused Geist fonts.** `app/fonts/GeistVF.woff` and
-   `app/fonts/GeistMonoVF.woff` (~120KB) are no longer referenced — Phase
-   2.1 switched the root layout to Fraunces + Manrope via
-   `next/font/google`. Remove when ready:
-   ```bash
-   rm -r app/fonts
-   ```
-2. **Dashboard route group.** `app/page.tsx` currently serves the
-   placeholder home directly. Phase 2.2 will move it into
-   `app/(dashboard)/page.tsx` once `middleware.ts` enforces auth on that
-   group.
+- **Dashboard route group.** `app/page.tsx` currently serves the
+  placeholder home directly. Phase 2.2 will move it into
+  `app/(dashboard)/page.tsx` once `middleware.ts` enforces auth on that
+  group. The `(public)/login` group is already in place.
 
 ## Documentation
 

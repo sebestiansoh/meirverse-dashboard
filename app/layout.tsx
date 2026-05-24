@@ -18,6 +18,8 @@ export const metadata: Metadata = {
   title: "Meirverse Dashboard",
   description:
     "Orchestration layer for the Meirverse group of companies — identity, universal tools, and CRM bridge.",
+  // Internal admin tool — keep out of search engines indefinitely.
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({
