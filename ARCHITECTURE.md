@@ -270,7 +270,7 @@ Week 2     │ Auth gate        Google OAuth + WebAuthn + Cloudflare Access
 Week 3-4   │ Persistent       Supabase schema + IndexedDB hybrid + departments
 Week 5     │ Google Tasks     Wire Google Tasks API
 Week 5-6   │ SSO bridge       JWT issuance + verifier library + JWKS endpoint
-Week 6-7   │ CRMs slot 1+2    Construction ERP retrofit + HR greenfield build
+Week 6-7   │ CRMs slot 1+2    Construction ERP rebuild + HR greenfield build
 
            ╔════════════════════════════════════════════════════╗
            ║  ◆ MILESTONE 1 · Week 7 · Go Live                   ║
@@ -692,6 +692,8 @@ loading, saving, optimistic updates, and Super Admin bypass.
 
 ### Phase 2.5 · CRM SSO bridge (Weeks 5–6)
 
+> **Scope note (2026-05-24).** The retrofit pattern below applies to **Termsheet** and **Engagement Letter** only. **Construction ERP** pivoted from retrofit to greenfield rebuild on 2026-05-24 — see CRM-INVENTORY.md §"Construction ERP / Projects ERP" for the new build plan. The rebuild still slots into the same Week 6–7 slot, but follows the *greenfield* path (Next.js 14 + Supabase + Vercel + bridge-only auth from day one) rather than the retrofit template here.
+
 #### The flow
 
 1. User clicks CRM tile
@@ -932,7 +934,7 @@ The last line matters. Claude Code (like all of us) gets enthusiastic. Bounding 
 
 | Item | When needed | Status |
 |---|---|---|
-| Reconnaissance: Construction ERP (6 questions) | Before Week 5 | Pending |
+| Reconnaissance: Construction ERP (6 questions) | Before Week 5 | ✅ Resolved 2026-05-24 — pivot from retrofit to greenfield rebuild, see CRM-INVENTORY.md v4.2 |
 | Reconnaissance: Termsheet (6 questions) | Before Week 9 | Pending |
 | Reconnaissance: Engagement Letter (6 questions) | Before Week 10 | Pending |
 | Cluster 2 shared `deals` schema design (field-level per stage) | Before Week 9 | Pending |
@@ -944,7 +946,10 @@ The last line matters. Claude Code (like all of us) gets enthusiastic. Bounding 
 | Real names for the 7 CRM subdomains | Before Week 5 | Pending |
 | Approval policies (who approves what) | Before approvals module | Pending |
 | Notification policies (who gets notified when) | Before notifications module | Pending |
+| Next.js framework: stay on 14 vs. upgrade to 15/16 | Before any feature relying on middleware, CSP nonces, Image API, or i18n | Pending — Next 14.2.35 carries 9 advisories (Image-API DoS, CSP-nonce XSS, middleware/proxy bypass, RSC cache poisoning, SSRF via WebSocket upgrades, et al.); fix requires breaking-change upgrade to Next 16. Real exposure for the placeholder/internal tool is low (no images, no middleware yet, no nonces, no i18n) and Cloudflare Access gates the network edge. Revisit before Phase 2.2 ships middleware. |
 
 ---
 
-*Document version 4.3 · 23 May 2026 · Multi-domain whitelist clarified to three-layer enforcement (Cloudflare Access · Google OAuth `hd` · server callback) · hybrid Workspace topology captured · §1 TL;DR + lock 5, §4 Layer 2 box, §8 Phase 2.2 step 1 + Claude Code prompt, §15 open questions all updated accordingly · Living document — update freely as build progresses*
+*Document version 4.4 · 24 May 2026 · Construction ERP pivot from retrofit to greenfield rebuild reflected (§7 wk 6-7 retrofit→rebuild · §8 Phase 2.5 scope note added · §15 recon row marked ✅ resolved with cross-reference to CRM-INVENTORY.md v4.2) · Next.js 14 vs 15/16 upgrade decision tracked as new §15 row (9 advisories on Next 14.2.35, breaking-change upgrade required, real exposure low for the placeholder) · CRM-INVENTORY.md remains canonical for per-CRM specifics · Living document — update freely as build progresses*
+
+*Document version 4.3 · 23 May 2026 · Multi-domain whitelist clarified to three-layer enforcement (Cloudflare Access · Google OAuth `hd` · server callback) · hybrid Workspace topology captured · §1 TL;DR + lock 5, §4 Layer 2 box, §8 Phase 2.2 step 1 + Claude Code prompt, §15 open questions all updated accordingly*
