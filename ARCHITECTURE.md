@@ -947,9 +947,113 @@ The last line matters. Claude Code (like all of us) gets enthusiastic. Bounding 
 | Approval policies (who approves what) | Before approvals module | Pending |
 | Notification policies (who gets notified when) | Before notifications module | Pending |
 | Next.js framework: stay on 14 vs. upgrade to 15/16 | Before any feature relying on middleware, CSP nonces, Image API, or i18n | Pending — Next 14.2.35 carries 9 advisories (Image-API DoS, CSP-nonce XSS, middleware/proxy bypass, RSC cache poisoning, SSRF via WebSocket upgrades, et al.); fix requires breaking-change upgrade to Next 16. Real exposure for the placeholder/internal tool is low (no images, no middleware yet, no nonces, no i18n) and Cloudflare Access gates the network edge. Revisit before Phase 2.2 ships middleware. |
+| **Central-API tier (Vercel → Fly.io → Supabase)** | Revisit at Milestone 2 review (post-Week 17) | **Deferred · do not adopt now.** Full trade-off analysis in §16. Trigger conditions for adopting: 3+ CRMs live AND copy-pasted department-permission logic across them AND a cross-CRM aggregation use case AND/OR a multi-provider webhook surface. None apply at Phase A. |
 
 ---
 
-*Document version 4.4 · 24 May 2026 · Construction ERP pivot from retrofit to greenfield rebuild reflected (§7 wk 6-7 retrofit→rebuild · §8 Phase 2.5 scope note added · §15 recon row marked ✅ resolved with cross-reference to CRM-INVENTORY.md v4.2) · Next.js 14 vs 15/16 upgrade decision tracked as new §15 row (9 advisories on Next 14.2.35, breaking-change upgrade required, real exposure low for the placeholder) · CRM-INVENTORY.md remains canonical for per-CRM specifics · Living document — update freely as build progresses*
+## 16. Considered-and-deferred: central-API tier (Vercel → Fly.io → Supabase)
+
+A real pattern, widely used (Resend, PostHog, many SaaS), but not right
+for the Meirverse Dashboard at Phase A scale. Documenting here so the
+trade-off doesn't have to be re-derived when the question resurfaces.
+
+### The proposed shape
+
+```
+underwriting.meirverse.app  (Vercel) ─┐
+budgeting.meirverse.app     (Vercel) ─┤──► api.meirverse.app (Fly.io)  ──►  Supabase
+some-erp.meirverse.app      (Vercel) ─┘
+```
+
+Three tiers instead of two: every CRM frontend talks to a shared API
+on Fly.io, which talks to Supabase. The dashboard becomes the auth +
+identity issuer; the central API becomes the business-logic + data
+broker.
+
+### What changes vs the locked v4 architecture
+
+| Concern                          | Locked (v4)                                 | Proposed                                              |
+|----------------------------------|---------------------------------------------|-------------------------------------------------------|
+| Where business logic lives       | Inside each Next.js app                     | Centralised in the Fly.io API                         |
+| Where authz/permission lives     | Supabase RLS (per-table policies)           | Re-implemented in the API server                      |
+| How CRMs read data               | Direct from Supabase with user JWT (RLS)    | Through the central API                               |
+| Real-time updates                | Native Supabase subscriptions per CRM       | Re-broker via API (more code, more state)             |
+| Webhook handlers                 | Next.js route handlers or per-CRM workers   | Fly.io API (natural fit)                              |
+| Cron / background jobs           | Vercel Cron + Supabase Edge Functions       | Fly.io (cleaner)                                      |
+| Cost steady-state                | ~$0–35/mo (free tiers)                      | +Fly.io paid (~$30–60/mo more, scales with traffic)   |
+| Deployment surfaces              | One Vercel project per CRM + dashboard      | + Fly.io API as a third surface                       |
+| Independence of CRMs             | High — each fully self-contained            | Low — all share the API contract                      |
+
+### The case for adopting it eventually
+
+1. **Cross-CRM data flows.** "Show me, for this client, every Termsheet,
+   every Engagement Letter, every WIP claim, every project status
+   across Construction ERP, ranked by activity." N+1 calls today, one
+   call via central API.
+2. **Shared business logic that's painfully duplicated.** Department ×
+   Role permission checks, audit log writes, JWT rotation, WhatsApp
+   send-and-log. If the same 200 lines copy-paste into every CRM, that's
+   a signal.
+3. **Logical home for webhooks + cron + queues.** WhatsApp webhooks,
+   scheduled report generation, AutoCount CSV ingestion, daily backups
+   — easier on Fly.io than scattered across Vercel project crons.
+
+### Why not now
+
+- **§4 explicitly chose 3-layer enforcement with RLS as Layer 3.**
+  Centralising means re-implementing what Supabase already gives for
+  free, and the audit story changes: you trust the API server, not
+  the database.
+- **§6 explicitly chose "signed-JWT bridge" to keep CRMs independent.**
+  A central API undoes that deliberately.
+- **You don't yet have the cross-CRM use cases.** Until 3+ CRMs are
+  in production, you can't see which logic is genuinely shared. Premature
+  factoring locks in the wrong API contract.
+- **Supabase RLS works best when the client talks to Supabase
+  directly with a user-scoped JWT.** Once an API sits in front, the
+  pattern becomes "service role can do anything; API enforces
+  permissions" — same auth/authz code, just rewritten.
+- **Cost + operational burden** at 2–3 staff scale: another deploy
+  pipeline, another runtime to monitor, another bill, another failure
+  mode.
+- **It blocks Milestone 1.** Adopting means designing the central API
+  contract before any CRM ships. 3–4 weeks of pre-work for value that
+  doesn't accrue until CRM #3+.
+
+### Trigger conditions to revisit
+
+ALL of these holding at once justifies the central API:
+
+1. ≥3 CRMs live, AND
+2. >200 lines of department-permission logic copy-pasted across them, AND
+3. A concrete cross-CRM aggregation feature that supabase-js can't serve
+   cleanly in one round-trip, AND
+4. ≥2 webhook providers in production whose handlers are cramped inside
+   Vercel route handlers.
+
+If only 1–2 conditions hold, simpler patterns suffice (shared NPM package
+for the duplicated logic; Supabase Edge Functions for the cross-CRM
+aggregation; one dedicated Vercel project for webhook handlers).
+
+### What a migration would look like (if it ever happens)
+
+Not a rewrite — a strangler-fig:
+
+1. Stand up `api.meirverse.app` on Fly.io with one endpoint (e.g.
+   `GET /v1/client/:id/timeline`) that no CRM uses yet.
+2. Migrate ONE specific feature (e.g. the announcement broadcast that
+   currently writes from the dashboard) to flow through the API.
+3. Each subsequent CRM points its few cross-cutting reads at the API;
+   per-resource reads stay direct-to-Supabase with RLS.
+4. Six months later, evaluate whether the API tier is paying for itself.
+
+Decision logged here so the next person asking "should we add Fly.io?"
+sees the analysis without re-deriving it.
+
+---
+
+*Document version 4.5 · 25 May 2026 · §15 new row for central-API tier (Vercel → Fly.io → Supabase) deferred to Milestone 2 review · §16 added with full trade-off analysis, trigger conditions, and strangler-fig migration sketch — none of which apply at Phase A · Phase 2.3 SQL migrations landed in supabase/migrations/ (schema + RLS + seed) — no schema text changes in this doc, but rows live now*
+
+*Document version 4.4 · 24 May 2026 · Construction ERP pivot from retrofit to greenfield rebuild reflected (§7 wk 6-7 retrofit→rebuild · §8 Phase 2.5 scope note added · §15 recon row marked ✅ resolved with cross-reference to CRM-INVENTORY.md v4.2) · Next.js 14 vs 15/16 upgrade decision tracked as new §15 row*
 
 *Document version 4.3 · 23 May 2026 · Multi-domain whitelist clarified to three-layer enforcement (Cloudflare Access · Google OAuth `hd` · server callback) · hybrid Workspace topology captured · §1 TL;DR + lock 5, §4 Layer 2 box, §8 Phase 2.2 step 1 + Claude Code prompt, §15 open questions all updated accordingly*

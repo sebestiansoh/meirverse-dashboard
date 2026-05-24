@@ -1,0 +1,20 @@
+-- ============================================================================
+-- supabase/seed.sql
+-- ============================================================================
+-- Local-only test data. This file is applied automatically by
+-- `supabase db reset` against the LOCAL Docker stack. It is NOT applied
+-- to remote production by `supabase db push`.
+--
+-- Reference data (departments, entities, cluster_entities) lives in
+-- numbered migrations, not here — production needs those too.
+--
+-- Add test users, fake tasks, sample announcements, etc. below as the
+-- need arises during local development.
+-- ============================================================================
+
+-- Example (uncomment to use locally):
+--
+-- insert into public.user_profiles (user_id, display_name, is_super_admin)
+-- values
+--   ('00000000-0000-0000-0000-000000000001', 'Test Director', false)
+-- on conflict (user_id) do nothing;

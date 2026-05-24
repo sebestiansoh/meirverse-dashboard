@@ -1,0 +1,67 @@
+# Supabase project configuration.
+#
+# This file is the canonical entry point for the Supabase CLI in this
+# repo. Generated minimally; if `supabase init` is ever run later it will
+# expand this with more defaults — that's fine, just diff and commit.
+#
+# After running:
+#   supabase login
+#   supabase link --project-ref <YOUR-PROJECT-REF>
+# the CLI uses this config + the migrations/ directory to push schema
+# changes to remote Supabase.
+
+# The project_id is a friendly label — it does NOT need to match the
+# remote project ref. Used by `supabase start` for local Docker.
+project_id = "meir-dashboard"
+
+# ── API ──────────────────────────────────────────────────────────────────────
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+# ── Database (local stack — production lives at supabase.com) ────────────────
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+# ── Studio (the Supabase dashboard UI) ───────────────────────────────────────
+[studio]
+enabled = true
+port = 54323
+
+# ── Auth ─────────────────────────────────────────────────────────────────────
+[auth]
+enabled = true
+# Production site URL is overridden via env. Locally this stays localhost.
+site_url = "http://localhost:3000"
+additional_redirect_urls = [
+  "https://dashboard.meirverse.app",
+  "https://dashboard.meirverse.app/auth/callback",
+]
+# Session length per ARCHITECTURE §8.2.2 — 7-day sliding window.
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = false
+double_confirm_changes = true
+enable_confirmations = true
+
+# Google OAuth provider — actual client ID + secret live in the remote
+# Supabase project's Authentication → Providers panel, not here.
+[auth.external.google]
+enabled = true
+skip_nonce_check = false
+# The redirect_uri MUST be set in Google Cloud Console to:
+#   https://<YOUR-PROJECT-REF>.supabase.co/auth/v1/callback
+# AND
+#   https://dashboard.meirverse.app/auth/callback
+# Locally:
+#   http://localhost:3000/auth/callback
