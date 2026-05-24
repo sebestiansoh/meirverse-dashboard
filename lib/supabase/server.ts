@@ -1,13 +1,19 @@
-import { createBrowserClient, createServerClient } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-export function createSupabaseBrowserClient() {
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
-}
-
+/**
+ * Server-context Supabase client. Reads + writes Next.js cookies via
+ * `next/headers`. Use in:
+ *   • Server Components (read-only — RSCs cannot mutate cookies)
+ *   • Server Actions     (can mutate cookies)
+ *   • Route Handlers     (can mutate cookies)
+ *
+ * Middleware (`lib/supabase/middleware.ts`) refreshes the session token
+ * on every request so this client always sees a fresh user.
+ */
 export function createSupabaseServerClient() {
   const cookieStore = cookies();
   return createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -21,7 +27,7 @@ export function createSupabaseServerClient() {
             cookieStore.set(name, value, options),
           );
         } catch {
-          // Server Components cannot write cookies; middleware refreshes the session.
+          // RSCs can't set cookies; middleware refreshes instead.
         }
       },
     },
