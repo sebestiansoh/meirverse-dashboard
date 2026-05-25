@@ -34,7 +34,7 @@ import { isEmailDomainAllowed } from "@/lib/auth/domain-check";
 import { mintBridgeToken } from "@/lib/auth/jwt-sign";
 import { scopesForAudience } from "@/lib/auth/scopes";
 import { getCurrentUserContext } from "@/lib/auth/user-context";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServiceClient } from "@/lib/supabase/server";
 
 interface IssueRequestBody {
   audience?: unknown;
@@ -119,8 +119,11 @@ export async function POST(request: NextRequest) {
   // 6. Audit log. Use the service-role client because the sso_issuances
   //    RLS policy denies client INSERT — the audit row must be written
   //    even if the requester is mid-rotation away from access.
+  //    If SUPABASE_SERVICE_ROLE_KEY is unset, this throws + the catch
+  //    below logs to console; the JWT mint itself still succeeds so the
+  //    user is not blocked by a missing audit-side env var.
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = createSupabaseServiceClient();
     const userAgent = request.headers.get("user-agent");
     const forwardedFor = request.headers.get("x-forwarded-for");
     const ip = forwardedFor?.split(",")[0]?.trim() ?? null;
