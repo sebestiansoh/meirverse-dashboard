@@ -18,6 +18,54 @@
 
 ---
 
+## Decision log
+
+Principal decisions captured via the alignment Q&A (2026-05-25, Round 2).
+Where a decision unblocks a 🔴 conflict, the conflict's status is
+updated in place below.
+
+| # | Decision | Resolves / affects |
+|---|---|---|
+| D-A | **Underwriting** = separate Child under v1.5's "and others"; keep its audience entries. Subdomain TBD (likely `finance.` or a new name). | Conflict #5 sub-question; not a full close. |
+| D-B | **Renames** (Conflict #1, Conflict #5) piggyback the consolidation commit. Apex move + subdomain renames happen AFTER the DB consolidation, in one coordinated commit. | Conflicts #1, #5 — sequencing decision, doesn't close them. |
+| D-C | **DB consolidation now** — provision ONE `internal` Supabase + ONE `internal-staging` (covers mandate's "from day one"). Retrofit migrations onto it. Drop the per-CRM Supabase-per-repo plan. | Conflicts #3, #6, #7 — moved from 🔴 → 🟡 (auto-align in progress this session). |
+| **D-D** | **Cubo / Caerus / MADE are independent org units.** ⚠ **Principal amendment to v1.5** — expands §Org units from 6 to 9. CLAUDE.md should rev to v1.6 with the three additions. | Conflict #4 — closes with 9 org units, not 6. |
+| **D-E** | **Property Maintenance** = scope inside Good Class Builders. **Property Management** = scope inside Meir Collective. Both populate Internal AND External dashboards as modules within existing org units. | Conflict #4 closes; Property Mgmt + Maint NOT separate org units. |
+| **D-F** | **No `propertymgmt.` subdomain.** Property Management functionally = extension of Leads (External `leads.meirverse.world`) cross-linked to ERP + Property Maintenance modules (Internal `erp.meirverse.app`). | Conflict #5 partial — `propertymgmt.meirverse.app` row deleted from inventory. |
+| **D-G** | **Underwriting** = its own Internal Child at `underwriting.meirverse.app`, under v1.5's "and others" allowance. | Conflict #5 partial — Underwriting subdomain locked. |
+
+### Principal amendment to v1.5 (D-D)
+
+Sebestian's answer to Q1 expands the org-unit list from 6 to 9. The
+canonical 9 are:
+
+1. Meir Homes
+2. Meir Edition
+3. Meir Collective
+4. m.lifestyle
+5. m.Atelier
+6. Good Class Builders
+7. **Cubo** *(new under v1.5 amendment)*
+8. **Caerus** *(new under v1.5 amendment)*
+9. **MADE** *(new under v1.5 amendment)*
+
+Until CLAUDE.md is re-versioned by Sebestian (suggest v1.6 with this
+in §Org units), the alignment doc is authoritative for the 9.
+
+### Phase 1 Internal Children — final enumeration
+
+| Subdomain | Child | Status |
+|---|---|---|
+| `meirverse.app` | Internal Dashboard (root) | Apex (post C-1) |
+| `crm.meirverse.app` | CRM (Cluster 2 deal pipeline consolidated — 4 stages internal) | Rebuild needed |
+| `erp.meirverse.app` | ERP (Construction + Property Management module + Property Maintenance module) | In progress — repo `meirverse-gcb-erp` to rename to `meirverse-erp` |
+| `hr.meirverse.app` | HR | In progress — repo `meirverse-hr` |
+| `finance.meirverse.app` | Finance | Not started |
+| `inventory.meirverse.app` | Inventory | Not started |
+| `underwriting.meirverse.app` | Underwriting (under v1.5 "and others") | Concurrent session |
+
+---
+
 ## 1 · Domain — apex vs subdomain 🔴
 
 | Source | Says |
@@ -29,6 +77,11 @@
 **Implication:** the running site is on the wrong host per mandate. Children are partially named per mandate (`hr.meirverse.app` matches; `gcb-erp.meirverse.app` does not — mandate would call it `erp.meirverse.app`).
 
 **Decision needed:** migrate to apex now (one-shot DNS + Vercel domain swap; redirect `dashboard.meirverse.app` → apex), or carry the subdomain through Phase 1 and migrate at the Phase 1 → Phase 2 boundary?
+
+**Decision (D-B, 2026-05-25):** rename piggybacks the DB consolidation
+commit. Apex move + Vercel domain swap + redirect from
+`dashboard.meirverse.app` happen AFTER consolidation lands cleanly.
+Still 🔴 until executed.
 
 ---
 
@@ -47,22 +100,28 @@ The interim RLS-recursion fix (migration `20260525000004`) is still worth applyi
 
 ---
 
-## 3 · Database topology — 1 project vs 4 🔴 / 🔵
+## 3 · Database topology — 1 project vs 4 🟡 / 🔵
 
 | Source | Says |
 |---|---|
 | Mandate §Tech stack + §Environments | **Internal DB** + **External DB** + `internal-staging` + `external-staging` (4 Supabase projects, all SG region) |
-| Current build | 1 Supabase project (`xwrthxehkrwmikhzqhma`, SG) |
+| Current build | 1 Supabase project (`xwrthxehkrwmikhzqhma`, SG) — Internal DB |
+| Concurrent CRM work | 3 separate Supabase projects planned (one per CRM); per-CRM mirror tables (`gcb_users`, `hr_users`) | 
 
-**Auto-rename:** the existing project becomes **Internal DB**. No data move required.
+**Decision (D-C, 2026-05-25):** consolidate **now**. The existing project
+is the **Internal DB**. The per-CRM Supabase plan is retired. ERP + HR +
+Underwriting all live as schemas within the Internal DB (one
+`auth.users` table; no mirror tables). `internal-staging` provisioned in
+the same session.
 
-**Decision needed for Phase 1 timing:**
-- Create `internal-staging` now (mandate says "from day one") — gates direct-to-prod migrations going forward 🔴
-- Create `external-db` + `external-staging` — Phase 2 work 🔵
+**Auto-align in progress this session:**
+- Internal DB schema retrofit (Step 1 of execution plan below)
+- `internal-staging` Supabase project create — Sebestian to action
+- `external-db` + `external-staging` — Phase 2 work 🔵
 
 ---
 
-## 4 · Org units — 12 entities vs 6 🔴
+## 4 · Org units — 12 entities vs 9 (post-D-D) 🟡
 
 | Source | Org units / entities |
 |---|---|
@@ -86,7 +145,7 @@ The interim RLS-recursion fix (migration `20260525000004`) is still worth applyi
 
 ---
 
-## 5 · CRM subdomain naming 🔴
+## 5 · CRM subdomain naming 🟡
 
 | Current (CRM-INVENTORY v4.2) | Mandate-compliant |
 |---|---|
@@ -98,6 +157,10 @@ The interim RLS-recursion fix (migration `20260525000004`) is still worth applyi
 | (none yet) | `inventory.meirverse.app` (mandate lists; not yet built) |
 
 **Decision needed:** confirm consolidation of the four Cluster 2 stages into a single `crm.` host. If yes, the Cluster 2 shared-DB design from ARCHITECTURE §8 maps cleanly (one DB, one UI with stage filters — was already the architecture, just unifies the URL).
+
+**Decision (D-A, D-B, 2026-05-25):**
+- Underwriting kept as separate Child; subdomain TBD (likely `finance.` or its own name).
+- All renames piggyback the consolidation commit (D-B) — `gcb-erp.` → `erp.`, Cluster 2 → `crm.`, dashboard apex move all happen together AFTER the DB consolidation lands.
 
 ---
 
@@ -119,7 +182,7 @@ The interim RLS-recursion fix (migration `20260525000004`) is still worth applyi
 
 ---
 
-## 7 · Migration discipline — staging soak 🔴
+## 7 · Migration discipline — staging soak 🟡
 
 | Source | Says |
 |---|---|
@@ -127,6 +190,16 @@ The interim RLS-recursion fix (migration `20260525000004`) is still worth applyi
 | Current build | Direct-to-prod migrations via Supabase SQL Editor (we just did this for Phase 2.3 + the upcoming RLS fix) |
 
 **Implication:** today's RLS-recursion fix should soak in staging first per mandate. Treating today's deploy as the final pre-mandate operation; from the alignment commit forward, **no production migrations without a staging soak unless Principal-declared hotfix**.
+
+**Decision (D-C, 2026-05-25):** `internal-staging` Supabase project to be
+provisioned in this session alongside Internal DB. From the consolidation
+commit forward, every new migration:
+1. Lands on `internal-staging` first via `supabase db push` against staging ref.
+2. Soak ≥ 24h.
+3. Production push via separate workflow_dispatch.
+
+Today's RLS-recursion fix is the **last hotfix-class direct-to-prod** —
+explicitly grandfathered.
 
 ---
 
@@ -168,19 +241,98 @@ Phase-2-or-later concern. No mobile client built; mandate's RN+Expo + quarterly 
 
 ---
 
-## What gets done now (this commit)
+## 12 · System of Record vs 2-way sync infra 🟡
 
-1. ✅ Mandate adopted at repo root (`CLAUDE.md`).
-2. ✅ This alignment doc captures the punchlist.
-3. ✅ Subordination banners added to `ARCHITECTURE.md` + `CRM-INVENTORY.md`.
-4. ⏭ RLS-recursion fix (interim, doesn't deepen divergence) applied as the last pre-mandate hotfix to keep `/` rendering. Migration committed; staging soak waived for this one because the dashboard is currently 500'ing.
+| Source | Says |
+|---|---|
+| Mandate §Data model | **SoR rule**: every entity has exactly one DB that is its canonical home. The other DB never holds the master copy. Cross-DB display via the API — *no caching, mirroring, or duplication*. |
+| Current build | 2-way sync infra built earlier today: `sync_outbound_events`, `sync_inbound_events`, 10+ event-type registry, RS256 service tokens, inbound webhook receivers in HR + ERP. **Event-driven mirroring between sibling CRMs** — replicates state across DB boundaries. |
 
-## What needs Principal decisions (next session)
+**Implication:** within Internal DB (where HR + ERP both live after Conflict #3 closes), the sync infra is **redundant** — a direct SQL JOIN between `hr.employees` and `erp.project_members` is the SoR-compliant pattern. The sync infra would only apply to Internal ↔ External crossings, which the mandate requires to go through the Fly.io gateway (Conflict #8) anyway.
 
-Conflicts **#1**, **#2**, **#3 (Phase 1 timing)**, **#4**, **#5**, **#7 (process gate)**. Each blocks substantive code work in its area.
+**Auto-align (this session):**
+1. Tag the sync code in `meirverse-hr` and `meirverse-gcb-erp` as "Phase 2 cross-DB use only". Do not emit any within-Internal-DB events from Phase 1 code.
+2. The `sync_outbound_events` + `sync_inbound_events` tables stay in the schema migrations — harmless, and a useful audit trail when they're switched on for cross-DB use.
+3. The dashboard's `mint-service-token` endpoint stays — same auth surface works for cross-DB calls via the gateway.
+4. Update `docs/2-way-sync.md` with a top banner: "Phase 2 cross-DB infrastructure. Do NOT use for within-DB sync — that's a direct SQL JOIN."
 
-## What auto-aligns once the decisions land
+---
 
-Conflict **#6** (company column) waits on **#4**.
-Conflict **#10** (tooling) can land in parallel.
-Conflicts **#3 (Phase 2)**, **#8**, **#9**, **#11** are Phase 2 / later.
+## 13 · Uploads must offer Local + Google Drive + Google Photos 🟡
+
+| Source | Says |
+|---|---|
+| Mandate §Uploads | *"Every upload control must offer three sources: Local · Google Drive · Google Photos."* |
+| Current build | No upload UI built yet (ERP Item photos + HR documents are Phase 1 features) |
+
+**Auto-align:** When the first upload control lands (likely ERP Items
+photo upload in Phase 1), build a reusable `<UploadPicker>` component
+with the three-source affordance. Share it across both CRMs.
+
+---
+
+## 14 · Expand-then-contract migrations 🟡
+
+| Source | Says |
+|---|---|
+| Mandate §Schema migrations | Default pattern for any schema change. Six explicit steps from additive add to drop-old. |
+| Current build | Local dev uses drop-and-recreate (acceptable for pre-prod schema design); production migrations not yet exercised. |
+
+**Auto-align (discipline):** Once consolidation lands and production
+sees its first real data, every schema change adopts the six-step
+pattern. Tracked here as a process commitment, not a code change.
+
+---
+
+## 15 · Cellar CRM migration 🔵
+
+Mandate §Migration & exceptions covers this explicitly:
+- `cellar.meir.sg` → rebuilt on Internal stack → `cellar.meirverse.app`
+- Existing instance grandfathered until cutover
+
+Tracked separately from the conflict ledger. Not in this session's
+scope.
+
+---
+
+## What gets done now (this session)
+
+Cumulative across the alignment + consolidation work:
+
+1. ✅ Mandate adopted at repo root + global (`~/.claude/CLAUDE.md` + all 3 repos).
+2. ✅ This alignment doc captures the punchlist (this commit + the user's earlier auto-align banners).
+3. ✅ Subordination banners on `ARCHITECTURE.md` + `CRM-INVENTORY.md`.
+4. ✅ Decision log + status updates for conflicts #1, #3, #5, #6, #7 per D-A / D-B / D-C.
+5. ✅ New conflicts #12 (SoR vs sync infra), #13 (upload picker), #14 (expand-then-contract), #15 (Cellar) added.
+6. ⏭ **Step 1 of execution plan** — DB consolidation. Builds the new unified Internal DB migration set in `meir-dashboard/supabase/migrations/`, retires per-CRM Supabase plans, deprecates `gcb_users` + `hr_users` mirror tables. Pending Principal go-ahead on the open questions below.
+
+## What needs Principal decisions (before Step 1 executes)
+
+Six open questions for Step 1's details:
+
+| Q | Question | Answered |
+|---|---|---|
+| Q1 | Conflict #4 — Cubo / Caerus / MADE: confirmed retired from v1.5's org-unit list? Catalog deletes them entirely? | ✅ D-D: independent org units (9 total) |
+| Q2 | Conflict #4 — Property Mgmt / Property Maint / Sub-brands: fold to modules inside Good Class Builders / Meir Collective, OR new org units? | ✅ D-E: Property Maint inside GCB; Property Mgmt inside Meir Collective. Sub-brands TBD. |
+| Q3 | Conflict #5 — Property Mgmt subdomain: `inventory.`? `erp.` module? Its own Child? | ✅ D-F: no dedicated subdomain — extends Leads + ERP + Property Maintenance modules |
+| Q4 | Conflict #5 — Underwriting subdomain: `finance.`? Its own Child name? | ✅ D-G: `underwriting.meirverse.app` under "and others" |
+| Q5 | Conflict #2 — Per-user access matrix UI: draft the layout (rows × cols of modules × actions) before building schema? | Deferred — non-blocking for migration design; schema in §C-2 sketch is implementable, UI can follow |
+| Q6 | Conflict #3 — Schema layout preference: Postgres schemas (`erp.projects`) vs flat with prefix (`erp_projects`). | **Default applied:** Postgres schemas. Cleaner `search_path` and per-Child RLS, no real downside. Override by Principal note if otherwise preferred. |
+
+### Sub-brands (under D-E, not yet decided)
+
+Sub-brands under Residential (mentioned in ARCHITECTURE.md §2 as "TBD"
+inside Meir Homes / Meir Edition) are unaddressed by D-E. Defer as
+Q-future until a sub-brand concretely needs to exist as a distinct
+data segment. Until then, all rows go under their parent org unit
+(`meir-homes` or `meir-edition`).
+
+## What auto-aligns once Step 1 lands
+
+- Conflict **#6** (`company` column) — added in the unified migration set; no separate work.
+- Conflict **#7** (staging soak) — new migration discipline kicks in from this point.
+- Conflict **#10** (Sentry / UptimeRobot / CI) — wireable in parallel.
+
+## What stays deferred (Phase 2 / later)
+
+- Conflicts **#3 Phase 2 leg** (External DB), **#8** (Fly.io gateway), **#9** (External Dashboard), **#11** (mobile), **#13's three-source picker hardening** for External Dashboard cases.
