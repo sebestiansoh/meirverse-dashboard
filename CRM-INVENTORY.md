@@ -13,9 +13,12 @@
 | **Cluster 1 · Group-wide** | All Meirverse entities (incl. Cubo, Caerus, MADE) | Standalone CRM, own DB | HR — Planned (Phase A) |
 | **Cluster 2 · Deal pipeline** | Homes / Edition / Collective / Atelier (Venture Builds entities can join via `cluster_entities`) | **Shared DB, 4 UIs** | 2 built, 2 planned |
 | **Cluster 3 · Asset lifecycle** | Mixed (H+E+C+A for Construction; Collective-only for Property Mgmt) | Each standalone, own DB | 1 built, 1 planned |
-| **Cluster 4 · m.lifestyle suite** | m.lifestyle | TBD | **Deferred** |
+| **Cluster 4 · Financial · Underwriting** | Cross-entity (insurance covers staff across all Meirverse entities) | Standalone CRM, own DB · **2-way sync with HR** | Phase 0 in concurrent session 2026-05-25 |
+| **Cluster 5 · m.lifestyle suite** | m.lifestyle | TBD | **Deferred** |
 
 **Venture Build entities (Cubo, Caerus, MADE):** Full Meirverse entities in administrative terms — they plug into Cluster 1 (HR) at launch and can be added to Cluster 2 or Cluster 3 via `cluster_entities` if/when needed. No dedicated operational subdomains at launch.
+
+**Inter-CRM 2-way sync.** Sibling CRMs exchange domain events via the outbox pattern documented in [`docs/2-way-sync.md`](./docs/2-way-sync.md). HR ↔ Underwriting is the active integration (employee roster/status/salary ↔ policy/risk-flag). HR ↔ ERP and ERP ↔ Underwriting are planned per the event-type registry in that doc. Dashboard mints short-lived RS256 service-token JWTs via `POST /api/sso/mint-service-token`; each CRM holds an HMAC bearer (`SVC_PRINCIPAL_SECRET_<EMITTER>`) for principal identification.
 
 ---
 
@@ -30,6 +33,7 @@
 | 5 | 2 | `specsheet.meirverse.app` | Spec Sheet | Deal pipeline stage 4 (onboarding) | Planned | Next.js + Supabase | Bridge-only | `spec-sheet` |
 | 6 | 3 | `gcb-erp.meirverse.app` | Construction ERP (GCB ERP) | Project delivery (H+E+C+A) | **Built once (Vite+Workers+D1, 2026-05-20); rebuild in progress on Next.js + Supabase + Vercel — see detail sheet** | Next.js 14 + Supabase Postgres + Supabase Storage (Vercel-hosted) | Bridge-only (SSO from dashboard) | `construction-erp` |
 | 7 | 3 | `propertymgmt.meirverse.app` | Property Management | Tenant management, maintenance (Collective-only) | Planned | Next.js + Supabase | Bridge-only | `property-mgmt` |
+| 8 | 4 | `underwriting.meirverse.app` | Underwriting | Insurance underwriting · policy lifecycle · risk decisioning · **2-way sync with HR** for staff coverage | **Phase 0 scaffolding in concurrent session 2026-05-25** | Next.js + Supabase (recommended) | Bridge-only · plus service-token receiver for sync | `underwriting` |
 
 **Note:** All working names should be replaced with real product names before Phase 2.5.
 
@@ -408,7 +412,9 @@ None of these apply at launch. Revisit per-entity after Milestone 2.
 
 ---
 
-*Document version 4.3 · 25 May 2026 · HR (row 1) Phase 0 scaffolded at sebestiansoh/meirverse-hr — same template as the ERP rebuild, primary/featured tile in Quick Launch per the access-logic decision (dashboard stays daily homepage; HR is the always-first / largest tile, ERP is reached via HR's pages in Phase 4 server-to-server pulls per `docs/crm-data-pulls.md`). Construction ERP (row 6) Phase 0 also scaffolded same day at sebestiansoh/meirverse-gcb-erp · Living document — update as inventory matures*
+*Document version 4.4 · 25 May 2026 · Cluster 4 added (Underwriting) — Phase 0 scaffolded in a concurrent Claude Code session; registered in dashboard `lib/auth/audiences.ts` under aud `underwriting`. 2-way sync contract added at `docs/2-way-sync.md` covering HR ↔ Underwriting (employee roster/status ↔ policy/risk-flag), with outbox pattern, RS256 service-token JWTs, idempotent inbound webhook, event-type registry. HR (row 1) implements the contract Phase 0; Underwriting needs to implement the receiver side per the concurrent session.*
+
+*Document version 4.3 · 25 May 2026 · HR (row 1) Phase 0 scaffolded; primary/featured tile in Quick Launch per access-logic decision; Construction ERP (row 6) Phase 0 also scaffolded same day*
 
 *Document version 4.2 · 24 May 2026 · Construction ERP (row 6) subdomain confirmed `gcb-erp.meirverse.app`; legacy standalone build at `~/code/gcb-erp/` being torn down; rebuild on Next.js + Supabase + Vercel scheduled for dashboard Phase A weeks 5-7*
 

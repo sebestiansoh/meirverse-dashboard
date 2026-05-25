@@ -31,7 +31,7 @@ export interface CrmAudience {
   aud: string;
   subdomain: string;
   displayName: string;
-  cluster: "cluster-1" | "cluster-2" | "cluster-3" | "dashboard";
+  cluster: "cluster-1" | "cluster-2" | "cluster-3" | "cluster-4" | "dashboard";
   requiredDepartments: string[];
   /** Hide the tile while the CRM is being built. Super Admin still sees it. */
   hidden?: boolean;
@@ -106,6 +106,19 @@ export const CRM_AUDIENCES: readonly CrmAudience[] = [
     displayName: "Property Management",
     cluster: "cluster-3",
     requiredDepartments: ["operations"],
+    hidden: true,
+  },
+
+  // Cluster 4 — financial / underwriting
+  {
+    aud: "underwriting",
+    subdomain: "underwriting.meirverse.app",
+    displayName: "Underwriting",
+    cluster: "cluster-4",
+    requiredDepartments: ["accounting", "legal"],
+    // Phase 0 being scaffolded in a concurrent session 2026-05-25. Hidden
+    // for regular users until that lands; Super Admin sees it.
+    // 2-way sync with HR per docs/2-way-sync.md.
     hidden: true,
   },
 ] as const;
