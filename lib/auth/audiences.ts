@@ -11,6 +11,15 @@
  *   - `requiredDepartments` — which departments grant ANY access to this
  *                             CRM. Super Admin always passes regardless.
  *                             Empty array = open to every signed-in user.
+ *   - `hidden`      — set true while the CRM is actively being built.
+ *                     Hidden tiles don't appear in Quick Launch for
+ *                     regular users. Super Admin sees all hidden tiles
+ *                     too (operational visibility).
+ *   - `featured`    — set true for the small set of CRMs that staff
+ *                     access most often (currently HR). Featured tiles
+ *                     render larger and sort first in the Quick Launch
+ *                     grid. Decision logged 2026-05-25: dashboard stays
+ *                     the daily homepage; HR is the primary tile.
  *
  * Source of truth: CRM-INVENTORY.md. Update both files together when a
  * new CRM is registered.
@@ -24,8 +33,10 @@ export interface CrmAudience {
   displayName: string;
   cluster: "cluster-1" | "cluster-2" | "cluster-3" | "dashboard";
   requiredDepartments: string[];
-  /** Set true while the CRM is actively being built — hides the tile. */
+  /** Hide the tile while the CRM is being built. Super Admin still sees it. */
   hidden?: boolean;
+  /** Promote to the larger / sort-first slot in Quick Launch. */
+  featured?: boolean;
 }
 
 export const CRM_AUDIENCES: readonly CrmAudience[] = [
@@ -36,7 +47,12 @@ export const CRM_AUDIENCES: readonly CrmAudience[] = [
     displayName: "Human Resources",
     cluster: "cluster-1",
     requiredDepartments: ["hr"],
-    hidden: true, // greenfield, not built
+    // Scaffolded 2026-05-25 (sebestiansoh/meirverse-hr). Phase 0 SSO landing
+    // verifies; module work pending. Visible to Super Admin in dev.
+    hidden: true,
+    // Primary tile — staff access this most often (their own leave, docs,
+    // employee profile). Renders larger + sorts first in Quick Launch.
+    featured: true,
   },
 
   // Cluster 2 — deal pipeline
@@ -80,7 +96,9 @@ export const CRM_AUDIENCES: readonly CrmAudience[] = [
     displayName: "Construction ERP",
     cluster: "cluster-3",
     requiredDepartments: ["operations", "accounting"],
-    hidden: true, // rebuild scheduled for Phase A weeks 5-7
+    // Scaffolded 2026-05-25 (sebestiansoh/meirverse-gcb-erp). Phase 0 SSO
+    // landing verifies; module work begins Phase 1 (Items module first).
+    hidden: true,
   },
   {
     aud: "property-mgmt",
@@ -119,15 +137,23 @@ export function userHasAudienceAccess(
 
 /**
  * Tiles the user should see in the Quick Launch grid. Excludes hidden and
- * permission-denied entries.
+ * permission-denied entries. Sorts featured tiles to the top (the small set
+ * of CRMs staff access most often), then by cluster for groupable rendering.
  */
 export function visibleAudiencesFor(
   userDepartments: DepartmentClaim[],
   isSuperAdmin: boolean,
 ): CrmAudience[] {
-  return CRM_AUDIENCES.filter((a) => {
+  const visible = CRM_AUDIENCES.filter((a) => {
     if (a.hidden && !isSuperAdmin) return false;
     return userHasAudienceAccess(a, userDepartments, isSuperAdmin);
+  });
+
+  return [...visible].sort((a, b) => {
+    // Featured first.
+    if (!!a.featured !== !!b.featured) return a.featured ? -1 : 1;
+    // Then cluster order — 1 → 2 → 3 → dashboard.
+    return a.cluster.localeCompare(b.cluster);
   });
 }
 

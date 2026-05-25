@@ -60,6 +60,7 @@ export default async function Home() {
                 audience={a.aud}
                 displayName={a.displayName}
                 cluster={a.cluster}
+                featured={a.featured ?? false}
               />
             ))}
           </div>

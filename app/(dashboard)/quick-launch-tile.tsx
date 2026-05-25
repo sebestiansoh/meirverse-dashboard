@@ -13,6 +13,8 @@ interface QuickLaunchTileProps {
   audience: string;
   displayName: string;
   cluster: string;
+  /** Featured tiles render larger (col-span-2 on sm+) and use a bolder style. */
+  featured?: boolean;
 }
 
 /**
@@ -26,6 +28,7 @@ export function QuickLaunchTile({
   audience,
   displayName,
   cluster,
+  featured = false,
 }: QuickLaunchTileProps) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,29 +56,37 @@ export function QuickLaunchTile({
     }
   }
 
+  // Featured tiles span two columns on sm+, render with a darker bg, bigger
+  // type, and a more emphatic call-to-action. Regular tiles keep the
+  // restrained card aesthetic.
+  const containerClass = featured ? "flex flex-col sm:col-span-2" : "flex flex-col";
+
+  const buttonClass = featured
+    ? "group relative flex flex-col items-start gap-2 rounded-md border border-accent/40 bg-accent/5 px-5 py-6 text-left transition-colors hover:bg-accent/10 hover:border-accent disabled:opacity-50 disabled:cursor-wait"
+    : "group relative flex flex-col items-start gap-1 rounded-md border border-surface bg-paper px-4 py-4 text-left transition-colors hover:border-accent disabled:opacity-50 disabled:cursor-wait";
+
+  const headingClass = featured
+    ? "font-serif text-2xl leading-tight text-ink"
+    : "font-serif text-lg leading-tight text-ink";
+
   return (
-    <div className="flex flex-col">
+    <div className={containerClass}>
       <button
         type="button"
         onClick={launch}
         disabled={pending}
-        className="group relative flex flex-col items-start gap-1 rounded-md border border-surface bg-paper px-4 py-4 text-left transition-colors hover:border-accent disabled:opacity-50 disabled:cursor-wait"
+        className={buttonClass}
       >
         <span className="font-sans text-xs uppercase tracking-[0.15em] text-muted">
-          {cluster.replace("cluster-", "Cluster ")}
+          {featured ? "Primary" : cluster.replace("cluster-", "Cluster ")}
         </span>
-        <span className="font-serif text-lg leading-tight text-ink">
-          {displayName}
-        </span>
+        <span className={headingClass}>{displayName}</span>
         <span className="mt-2 font-sans text-xs text-muted/80">
-          {pending ? "Issuing token…" : "Launch →"}
+          {pending ? "Issuing token…" : `Launch ${featured ? displayName : ""} →`.replace("  ", " ")}
         </span>
       </button>
       {error && (
-        <p
-          role="alert"
-          className="mt-2 font-sans text-xs text-red-700"
-        >
+        <p role="alert" className="mt-2 font-sans text-xs text-red-700">
           {error}
         </p>
       )}

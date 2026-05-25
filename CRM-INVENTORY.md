@@ -23,7 +23,7 @@
 
 | # | Cluster | Subdomain (working) | Internal name (working) | Function | Status | Stack | Auth | Audience claim |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 1 | `hr.meirverse.app` | HR | Personnel, onboarding, benefits | Planned | Next.js + Supabase (recommended) | Bridge-only | `hr` |
+| 1 | 1 | `hr.meirverse.app` | Meirverse HR (**primary tile**) | Personnel, leave, benefits, documents | **Phase 0 scaffolded 2026-05-25 · SSO landing live, schema applied · module work pending** | Next.js 14 + Supabase Postgres + iron-session + jose verifier (Vercel-hosted) | Bridge-only (SSO from dashboard) | `hr` |
 | 2 | 2 | `termsheet.meirverse.app` | Termsheet | Deal pipeline stage 1 | **Built** | **TBD — recon needed** | **TBD — recon needed** | `termsheet` |
 | 3 | 2 | `engagement.meirverse.app` | Engagement Letter | Deal pipeline stage 2 | **Built** | **TBD — recon needed** | **TBD — recon needed** | `engagement` |
 | 4 | 2 | `prospect.meirverse.app` | Prospect DB | Deal pipeline stage 3 | Planned | Next.js + Supabase | Bridge-only | `prospect-db` |
@@ -120,28 +120,29 @@ If a built CRM has no accessible source code:
 
 ### Cluster 1 · Group-wide
 
-#### HR (Planned · Phase A · Slot 2)
+#### Meirverse HR (Phase 0 scaffolded · primary tile)
 
 - Subdomain: `hr.meirverse.app`
-- Function: Personnel, onboarding, benefits, leave
-- Status: Planned — design phase
+- Function: Personnel, leave, benefits, documents. **Payroll out of scope** — AutoCount is the system of record for money per ARCHITECTURE §1.
+- Status: **Phase 0 done 2026-05-25.** SSO bridge landing verifies dashboard JWTs end-to-end; 5-table schema (hr_users mirror, employees, leave_types, leave_balances, leave_requests, employee_documents) applied to local; module work pending Phase 1.
 - Audience claim: `hr`
-- Stack: **Next.js + Supabase** (recommended)
-- Repo: To be created
-- Database: Separate Supabase project (Singapore)
-- Existing auth: None — bridge-only from day 1
+- Stack: Next.js 14 (App Router) + TypeScript strict + Tailwind 3 + Supabase Postgres + iron-session + jose verifier — same template as the GCB ERP rebuild.
+- Repo: https://github.com/sebestiansoh/meirverse-hr (private)
+- Local path: `~/Projects/hr/`
+- Database: Separate Supabase project (Singapore) — provisioned by Sebestian.
+- Existing auth: None — bridge-only from day 1.
+- **Featured tile in dashboard Quick Launch** (decision 2026-05-25: HR is the primary tile that staff click first because it covers leave / docs / employee profile — the cross-cutting daily concerns).
 
-**Build plan:**
-- [ ] Define data model (employees, departments, leave, benefits, documents)
-- [ ] Create Next.js project from template
-- [ ] Set up Supabase project Singapore region
-- [ ] Add `/auth/sso` route as ONLY auth path
-- [ ] Implement JWKS verification against dashboard
-- [ ] Role mapping: HR Director → admin in HR system, HR Manager → edit, HR Staff → write-own, HR Viewer → read-only
-- [ ] Build features per spec (separate spec doc)
-- [ ] Add to dashboard quick-launch tiles
-- [ ] Test all 4 roles end-to-end
-- [ ] Deploy
+**Build plan (Phase 1+):**
+- [x] ~~Define data model~~ — Phase 0 covers employees, leave (types + balances + requests), documents. Appraisals + onboarding + benefits in Phase 2.
+- [x] ~~Create Next.js project, set up Supabase Singapore, add `/auth/sso`, implement JWKS verification~~ — Phase 0.
+- [x] ~~Add to dashboard quick-launch tiles~~ — `featured: true` in `lib/auth/audiences.ts`.
+- [ ] **Phase 1 RLS policies** via custom-JWT pattern (since CRM doesn't use Supabase Auth, `auth.uid()` isn't populated — mint a Supabase-signed JWT containing `hr_users.user_id` at session-establishment, send as Authorization header, RLS reads it via `current_setting('request.jwt.claims')`).
+- [ ] **Phase 1 UI**: own-leave-request page + leave balance dashboard + employee directory.
+- [ ] **Phase 2 Director workflows**: approve/reject leave requests, manage entitlements, edit employee records.
+- [ ] **Phase 3 Documents**: upload + sensitivity-tagged retrieval. Appraisals. Onboarding checklist.
+- [ ] **Phase 4 cross-CRM pulls**: HR pages pull ERP project-assignment data inline via server-to-server pattern — see [`docs/crm-data-pulls.md`](./docs/crm-data-pulls.md). Requires the ERP to ship HTTP `/api/...` endpoints first.
+- [ ] Test all 4 department roles end-to-end. Deploy to Vercel. Add `hr.meirverse.app` custom domain.
 
 ---
 
@@ -407,7 +408,9 @@ None of these apply at launch. Revisit per-entity after Milestone 2.
 
 ---
 
-*Document version 4.2 · 24 May 2026 · Construction ERP (row 6) subdomain confirmed `gcb-erp.meirverse.app`; legacy standalone build at `~/code/gcb-erp/` being torn down (Cloudflare Pages/Worker/D1/R2/secrets all going); rebuild on Next.js + Supabase + Vercel scheduled for dashboard Phase A weeks 5-7 · Living document · update as inventory matures*
+*Document version 4.3 · 25 May 2026 · HR (row 1) Phase 0 scaffolded at sebestiansoh/meirverse-hr — same template as the ERP rebuild, primary/featured tile in Quick Launch per the access-logic decision (dashboard stays daily homepage; HR is the always-first / largest tile, ERP is reached via HR's pages in Phase 4 server-to-server pulls per `docs/crm-data-pulls.md`). Construction ERP (row 6) Phase 0 also scaffolded same day at sebestiansoh/meirverse-gcb-erp · Living document — update as inventory matures*
+
+*Document version 4.2 · 24 May 2026 · Construction ERP (row 6) subdomain confirmed `gcb-erp.meirverse.app`; legacy standalone build at `~/code/gcb-erp/` being torn down; rebuild on Next.js + Supabase + Vercel scheduled for dashboard Phase A weeks 5-7*
 
 *Document version 4.1 · 24 May 2026 · Construction ERP (row 6) reconnaissance complete: legacy Vite + Cloudflare Workers + D1 standalone build at `~/code/gcb-erp/` paused, rebuild scheduled on Next.js + Supabase + Vercel for dashboard Phase A weeks 5-7*
 
