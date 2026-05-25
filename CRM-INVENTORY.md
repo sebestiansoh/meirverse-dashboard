@@ -273,7 +273,7 @@ create table deal_stage_history (
 | -------- | ------ |
 | Q1 Framework / language | **Was** Vite + React 18 + TS + Cloudflare Workers (Hono). **Now rebuilding to** Next.js 14 + TS to match dashboard CRM pattern. |
 | Q2 Current login method | None in production — only the placeholder is deployed. The legacy custom-JWT plan is dropped. |
-| Q3 Source code location | https://github.com/sebestiansoh/gcb-erp (private; will be archived once rebuild reaches parity). New rebuild repo TBD — sibling to this dashboard repo. |
+| Q3 Source code location | **Rebuild:** https://github.com/sebestiansoh/meirverse-gcb-erp (private, scaffolded 2026-05-25 — Next.js 14 + Supabase + iron-session + jose verifier, end-to-end Phase 0 with /auth/sso landing live). **Legacy:** https://github.com/sebestiansoh/gcb-erp (private, will be archived once rebuild reaches parity). |
 | Q4 Database location | **Was** Cloudflare D1 (`gcb-erp-production`, APAC, id `b90d5e04-e498-4fb9-9605-98bd83a183a7`) with full 17-table schema applied. **Now moving to** Supabase Postgres (Singapore) — new project to be created during rebuild. |
 | Q5 Active users today | 0 (placeholder only, never went live) |
 | Q6 Who has admin access today | Sebestian only — Cloudflare wrangler-authenticated; legacy GitHub Actions secrets in place. |
