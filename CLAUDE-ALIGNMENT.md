@@ -304,7 +304,24 @@ Cumulative across the alignment + consolidation work:
 3. ✅ Subordination banners on `ARCHITECTURE.md` + `CRM-INVENTORY.md`.
 4. ✅ Decision log + status updates for conflicts #1, #3, #5, #6, #7 per D-A / D-B / D-C.
 5. ✅ New conflicts #12 (SoR vs sync infra), #13 (upload picker), #14 (expand-then-contract), #15 (Cellar) added.
-6. ⏭ **Step 1 of execution plan** — DB consolidation. Builds the new unified Internal DB migration set in `meir-dashboard/supabase/migrations/`, retires per-CRM Supabase plans, deprecates `gcb_users` + `hr_users` mirror tables. Pending Principal go-ahead on the open questions below.
+6. ✅ **Step 1 — DB consolidation** (per D-C). Landed 2026-05-25:
+   - Unified Internal DB migration set in `meir-dashboard/supabase/migrations/`:
+     `20260525100010_company_catalog.sql` (9 org units per D-D) ·
+     `20260525100020_user_profiles.sql` ·
+     `20260525100030_user_access_matrix.sql` (new per-user matrix per Conflict #2) ·
+     `20260525100040_dashboard_schema.sql` (with `company` column per Conflict #6) ·
+     `20260525100100_erp_schema.sql` (`erp.*` Postgres schema, 17 tables) ·
+     `20260525100200_hr_schema.sql` (`hr.*` Postgres schema, 5 tables) ·
+     `20260525100300_sync_infrastructure.sql` (tagged Phase-2-cross-DB-only per Conflict #12) ·
+     `20260525100400_rls_policies.sql` (all RLS keyed off `user_access` + `company`) ·
+     `20260525100500_legacy_departments_compat.sql` (transitional shim for dashboard app code until Conflict #2 rewrite) ·
+     `20260525100900_seed.sql` (9 companies + modules + leave types + ERP taxonomies)
+   - Old per-CRM migrations archived to `supabase/migrations/_legacy/` in all 3 repos.
+   - `gcb_users` + `hr_users` mirror tables retired — all FKs now reference `auth.users` directly.
+   - `meirverse-gcb-erp` + `meirverse-hr` `.env.local.example` files updated to share Internal DB connection.
+   - `lib/sso/user-sync.ts` in both CRMs rewritten as a READ-only resolver against `public.user_profiles` (no upsert — SoR violation).
+   - `lib/sync/inbound-dispatch.ts` handlers retagged "Phase 2 cross-DB only" with notes pointing at the Phase 1 SQL JOIN path.
+   - typecheck + lint + build all green across 3 repos.
 
 ## What needs Principal decisions (before Step 1 executes)
 
