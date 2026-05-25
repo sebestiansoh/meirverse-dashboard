@@ -1,8 +1,17 @@
+> ⚠ **Subordinate to the Platform Mandate.** This brief predates
+> [`CLAUDE.md`](./CLAUDE.md) v1.5 (25 May 2026). On conflict, the
+> mandate wins. Open divergences (apex domain, per-user access model, two-DB
+> topology, 6-org-unit consolidation, CRM subdomain naming, staging-soak
+> discipline, `company` column on every primary table) are tracked in
+> [`CLAUDE-ALIGNMENT.md`](./CLAUDE-ALIGNMENT.md) — pending decisions are NOT
+> silently applied; this document remains the working build spec for the
+> Internal Dashboard (Phase 1) until each conflict is closed.
+
 # Meirverse Dashboard · Architecture (v4)
 
 **Owner:** Sebestian Soh (Universal Super Admin)
 **Build mode:** Vibe-coded with Claude Code / Cursor
-**Status:** All major decisions locked · ready for build
+**Status:** All major decisions locked · ready for build · subordinate to CLAUDE.md v1.5
 
 ---
 

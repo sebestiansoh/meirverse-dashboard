@@ -1,8 +1,18 @@
+> ⚠ **Subordinate to the Platform Mandate.** This catalog predates
+> [`CLAUDE.md`](./CLAUDE.md) v1.5 (25 May 2026), which redefines Children
+> naming as `function.meirverse.app` — meaning `gcb-erp.` becomes `erp.`,
+> the four Cluster 2 stage-subdomains likely consolidate into one
+> `crm.meirverse.app`, and two Children (`finance.`, `inventory.`) are
+> named into Phase 1 scope. See
+> [`CLAUDE-ALIGNMENT.md`](./CLAUDE-ALIGNMENT.md) Conflict #5 for the
+> mapping table. This inventory remains the working catalog for in-flight
+> retrofit and rebuild work until each row's mandate-name is locked in.
+
 # CRM Inventory · Meirverse Dashboard SSO Bridge (v4)
 
 **Purpose:** Single source of truth for every operational system under `*.meirverse.app` that needs SSO via the dashboard.
 
-**Status:** 7 core CRMs across 3 clusters + reserved Cluster 4
+**Status:** 7 core CRMs across 3 clusters + reserved Cluster 4 · subordinate to CLAUDE.md v1.5
 
 ---
 
