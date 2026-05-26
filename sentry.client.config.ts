@@ -19,9 +19,11 @@ if (dsn) {
     environment: process.env.NEXT_PUBLIC_VERCEL_ENV ?? "development",
     // Performance — 10% sampling is plenty for an internal tool.
     tracesSampleRate: Number(process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE ?? 0.1),
-    // Replay — sample 1% of normal sessions, 100% of error sessions.
-    replaysSessionSampleRate: 0.01,
-    replaysOnErrorSampleRate: 1.0,
+    // Replay disabled — its CDN loader (browser.sentry-cdn.com) isn't in the
+    // current CSP. Re-enable by adding the CDN to script-src + connect-src
+    // and setting these two rates back above zero.
+    replaysSessionSampleRate: 0,
+    replaysOnErrorSampleRate: 0,
     // Suppress noisy Next.js framework "abort" errors.
     ignoreErrors: [
       "AbortError",
