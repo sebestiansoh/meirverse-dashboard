@@ -85,8 +85,8 @@ insert into erp.taxonomies (id, trades, types, oop_categories, progress_phases, 
     "Disposal installations", "Water installations", "Heat source",
     "Space heating & air treatment", "Ventilation systems", "Electrical installations",
     "Gas installations", "Lift & conveyor installations", "Fire & lightning protection",
-    "Communication installations", "Special installations", "Builders' work in connection",
-    "Builders' profit & attendance", "Site works", "Drainage", "External services",
+    "Communication installations", "Special installations", "Builders'' work in connection",
+    "Builders'' profit & attendance", "Site works", "Drainage", "External services",
     "Minor building works", "Demolitions", "Contingencies", "PC sums", "Provisional sums"
   ]'::jsonb
 )
