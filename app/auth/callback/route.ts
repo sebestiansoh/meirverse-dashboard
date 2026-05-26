@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isEmailDomainAllowed } from "@/lib/auth/domain-check";
+import { storeGoogleTokens } from "@/lib/google/store-tokens";
+import { GOOGLE_OAUTH_SCOPES } from "@/lib/google/scopes";
 
 /**
  * OAuth callback. Supabase redirects the browser here with `?code=…`
@@ -44,6 +46,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(
       new URL("/login?error=domain_not_allowed", request.url),
     );
+  }
+
+  // Capture the Google OAuth refresh token if Google issued one. This
+  // only fires on consent-granting sign-ins (access_type=offline +
+  // prompt=consent on the /login signInWithOAuth call). Subsequent
+  // sign-ins reuse the stored refresh token unless the user revoked.
+  //
+  // Failure is non-blocking — the user is signed in either way; Phase
+  // 2.4 widgets just show "connect Google" if no token is on file.
+  const providerRefresh = data.session.provider_refresh_token;
+  if (providerRefresh) {
+    try {
+      await storeGoogleTokens({
+        userId: data.session.user.id,
+        refreshToken: providerRefresh,
+        accessToken: data.session.provider_token,
+        accessTokenExpiresIn: data.session.expires_in ?? 3600,
+        scopes: GOOGLE_OAUTH_SCOPES,
+      });
+    } catch (err) {
+      console.error("[auth/callback] google token capture failed:", err);
+    }
   }
 
   // Success. Cookies are set by the @supabase/ssr server client; the

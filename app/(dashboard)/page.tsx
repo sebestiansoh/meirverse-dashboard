@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 import { getCurrentUserContext } from "@/lib/auth/user-context";
 import { visibleAudiencesFor } from "@/lib/auth/audiences";
 import { QuickLaunchTile } from "./quick-launch-tile";
+import { TasksWidget } from "./_widgets/tasks-widget";
+import { CalendarWidget } from "./_widgets/calendar-widget";
+import { DocumentsWidget } from "./_widgets/documents-widget";
 
 /**
  * Dashboard home. The route-group layout already enforced auth; we use
@@ -38,11 +41,21 @@ export default async function Home() {
             : "Welcome to the Meirverse Dashboard."}
         </h1>
         <p className="font-sans text-sm text-muted">
-          Phase 2.5 · SSO bridge live. Universal modules — calendar, tasks,
-          inbox, markets, directory — arrive across Phase 2.6+ per the build
+          Phase 2.4 · Google Tasks · Calendar · Drive widgets live below.
+          Phase 2.5 · SSO bridge live. Remaining universal modules — inbox,
+          markets, directory — arrive across Phase 2.6+ per the build
           sequence in <code className="font-sans text-xs">ARCHITECTURE.md §7</code>.
         </p>
       </header>
+
+      <section className="space-y-4">
+        <h2 className="font-serif text-xl">Today</h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <TasksWidget />
+          <CalendarWidget />
+          <DocumentsWidget />
+        </div>
+      </section>
 
       <section className="space-y-4">
         <h2 className="font-serif text-xl">Quick Launch</h2>

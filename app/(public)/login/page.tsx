@@ -3,6 +3,7 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState, Suspense } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { GOOGLE_OAUTH_SCOPES } from "@/lib/google/scopes";
 
 const errorMessages: Record<string, string> = {
   oauth_failed: "Google sign-in could not start. Please try again.",
@@ -23,11 +24,21 @@ function LoginInner() {
     setSigningIn(true);
     const supabase = createSupabaseBrowserClient();
     const hd = process.env.NEXT_PUBLIC_GOOGLE_PRIMARY_WORKSPACE_HD;
+    // access_type=offline + prompt=consent → Google issues a refresh
+    // token (captured server-side in /auth/callback for Phase 2.4
+    // Tasks/Calendar/Drive integrations).
+    const queryParams: Record<string, string> = {
+      access_type: "offline",
+      prompt: "consent",
+    };
+    if (!skipHd && hd) queryParams.hd = hd;
+
     const { error: signInError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: !skipHd && hd ? { hd } : undefined,
+        queryParams,
+        scopes: GOOGLE_OAUTH_SCOPES,
       },
     });
     if (signInError) {

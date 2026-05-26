@@ -46,10 +46,17 @@ const nextConfig = {
               "font-src 'self' data:",
               // Supabase (HTTPS + WebSocket for realtime), Google OAuth,
               // Sentry ingest endpoints.
+              // Phase 2.4 adds Google APIs (server-side fetches happen
+              // from Node and bypass CSP, but the OAuth redirect URLs do
+              // go through here). oauth2.googleapis.com is the token
+              // refresh endpoint; *.googleapis.com covers Tasks/Calendar/
+              // Drive ingest if we ever proxy through the client.
               "connect-src 'self' " +
                 "https://xwrthxehkrwmikhzqhma.supabase.co " +
                 "wss://xwrthxehkrwmikhzqhma.supabase.co " +
                 "https://accounts.google.com " +
+                "https://oauth2.googleapis.com " +
+                "https://*.googleapis.com " +
                 "https://*.ingest.sentry.io " +
                 "https://*.ingest.us.sentry.io",
               // Modern equivalent of X-Frame-Options: DENY (kept for legacy).
