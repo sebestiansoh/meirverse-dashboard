@@ -26,7 +26,10 @@ max_rows = 1000
 [db]
 port = 54322
 shadow_port = 54320
-major_version = 15
+# Match the remote Supabase project's Postgres major version. Both
+# meirverse-internal (xwrthxehkrwmikhzqhma) and meirverse-internal-staging
+# (blmpelnulzayawhrgcuj) ship on Postgres 17 by default.
+major_version = 17
 
 # ── Studio (the Supabase dashboard UI) ───────────────────────────────────────
 [studio]
