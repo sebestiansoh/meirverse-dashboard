@@ -54,14 +54,33 @@ enable_signup = false
 double_confirm_changes = true
 enable_confirmations = true
 
-# Google OAuth provider — actual client ID + secret live in the remote
-# Supabase project's Authentication → Providers panel, not here.
-[auth.external.google]
-enabled = true
-skip_nonce_check = false
-# The redirect_uri MUST be set in Google Cloud Console to:
-#   https://<YOUR-PROJECT-REF>.supabase.co/auth/v1/callback
-# AND
-#   https://dashboard.meirverse.app/auth/callback
-# Locally:
-#   http://localhost:3000/auth/callback
+# Google OAuth provider — managed in each project's Supabase dashboard UI,
+# NOT here. Each project (production xwrthxehkrwmikhzqhma + staging
+# blmpelnulzayawhrgcuj) has its own Google OAuth client ID + secret set
+# at Authentication → Providers → Google.
+#
+# Why this isn't declared in config.toml:
+#   When `enabled = true` is set, the Supabase CLI's config validator
+#   requires `client_id` + `secret` to be present (inline or via
+#   `env(VAR_NAME)` references). The client_id + secret differ per
+#   project, AND we don't want secrets in version control. Leaving the
+#   block commented-out means `supabase link` + `supabase db push` work
+#   (which only need schema, not auth) and each project's OAuth config
+#   in the dashboard stays untouched.
+#
+# Required Google Cloud Console "Authorized redirect URIs" entries (one
+# shared GCP OAuth client; production + staging stacks add their own
+# callbacks):
+#   https://xwrthxehkrwmikhzqhma.supabase.co/auth/v1/callback   (prod)
+#   https://blmpelnulzayawhrgcuj.supabase.co/auth/v1/callback   (staging)
+#   https://dashboard.meirverse.app/auth/callback              (prod app)
+#   http://localhost:3000/auth/callback                        (local)
+#
+# To re-enable management here later (e.g. once Supabase CLI supports
+# secrets refs cleanly), restore the block below and set the env vars:
+#
+# [auth.external.google]
+# enabled = true
+# client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+# secret    = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+# skip_nonce_check = false
