@@ -3,18 +3,20 @@
 import type { ReactNode } from "react";
 
 /**
- * Shared card chrome for the Phase 2.4 widgets. Keeps the visual
- * language consistent — uppercase cluster-style label, serif title,
- * scrollable body, optional footer link.
+ * Shared card chrome for the Phase 2.4 widgets. Provides the
+ * uppercase cluster-style subtitle, serif title, optional tab strip,
+ * scrollable body, and optional footer link.
  */
 export function WidgetShell({
   title,
   subtitle,
+  tabs,
   children,
   footer,
 }: {
   title: string;
   subtitle?: string;
+  tabs?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
 }) {
@@ -28,6 +30,7 @@ export function WidgetShell({
         )}
         <h2 className="font-serif text-lg leading-tight text-ink">{title}</h2>
       </header>
+      {tabs && <div className="mb-3">{tabs}</div>}
       <div className="flex-1 min-h-[8rem]">{children}</div>
       {footer && (
         <footer className="mt-4 pt-3 border-t border-surface/70 font-sans text-xs text-muted/80">
@@ -35,6 +38,38 @@ export function WidgetShell({
         </footer>
       )}
     </section>
+  );
+}
+
+export function WidgetTabs<T extends string>({
+  active,
+  onChange,
+  options,
+}: {
+  active: T;
+  onChange: (next: T) => void;
+  options: ReadonlyArray<{ key: T; label: string }>;
+}) {
+  return (
+    <div className="flex gap-1 border-b border-surface/60 -mx-1">
+      {options.map((opt) => {
+        const isActive = opt.key === active;
+        return (
+          <button
+            key={opt.key}
+            type="button"
+            onClick={() => onChange(opt.key)}
+            className={`px-2 py-1.5 font-sans text-[11px] uppercase tracking-[0.12em] transition-colors -mb-px border-b-2 ${
+              isActive
+                ? "text-ink border-accent"
+                : "text-muted border-transparent hover:text-ink"
+            }`}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

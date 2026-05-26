@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 
 /**
  * Polls a server action every `intervalMs` while the tab is visible.
- * Cleans up on unmount.
+ * Cleans up on unmount. Resets to `undefined` (loading) when `deps`
+ * change so a tab-switch surfaces the skeleton state.
  *
  * State convention:
- *   undefined → loading (initial)
+ *   undefined → loading (initial or post-deps-change)
  *   null      → loaded, no data available (e.g. user hasn't connected Google)
  *   T[]       → data loaded
  *
@@ -17,6 +18,7 @@ import { useEffect, useState } from "react";
 export function usePollingData<T>(
   fetcher: () => Promise<T | null>,
   intervalMs = 60_000,
+  deps: ReadonlyArray<unknown> = [],
 ): { data: T | null | undefined; error: string | null } {
   const [data, setData] = useState<T | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
@@ -24,8 +26,16 @@ export function usePollingData<T>(
   useEffect(() => {
     let cancelled = false;
 
+    // Reset to loading state when deps (e.g. selected tab) change.
+    setData(undefined);
+    setError(null);
+
     async function load() {
-      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState !== "visible"
+      )
+        return;
       try {
         const next = await fetcher();
         if (cancelled) return;
@@ -36,7 +46,6 @@ export function usePollingData<T>(
         const msg = e instanceof Error ? e.message : String(e);
         console.error("[widget poll] fetcher threw:", msg);
         setError(msg);
-        // Keep previous data on error — UX-friendlier than blanking.
       }
     }
 
@@ -52,11 +61,8 @@ export function usePollingData<T>(
       clearInterval(id);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-    // We intentionally don't include `fetcher` in deps — server-action
-    // refs are stable across renders, and including would re-trigger
-    // the poll setup unnecessarily.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [intervalMs]);
+  }, [intervalMs, ...deps]);
 
   return { data, error };
 }
