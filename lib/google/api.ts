@@ -1,30 +1,33 @@
 /**
  * Thin Google API wrappers for Phase 2.4 dashboard widgets.
  *
- * Each function takes a variant string so the widget can offer tab
- * filters (current / today / done · today / thisWeek / nextWeek ·
- * recent / myDrive / sharedDrives). The shape returned is identical
- * across variants — the widget just renders the items.
+ * Tasks  — list user's task LISTS + tasks in a list + mark complete
+ * Calendar — list events in a time window (today / this week / next week)
+ * Drive    — list files filtered by source (recent / my drive / shared)
  *
- * Errors surface as `null` data + console.error — the widget renders a
- * "couldn't load" message and lets the user retry. We do NOT throw out
- * to the page; one widget breaking shouldn't break the whole dashboard.
+ * Errors return null + console.error; widgets render a graceful state.
  */
 
 import { getGoogleAccessToken } from "./refresh-access-token";
 
-export interface TaskItem {
+export interface TaskList {
   id: string;
   title: string;
-  due?: string; // ISO timestamp or undefined
+}
+
+export interface TaskItem {
+  id: string;
+  listId: string; // we tag this on the way out so the widget can call complete()
+  title: string;
+  due?: string;
   notes?: string;
-  completed?: string; // ISO when completed (only set for 'done' variant)
+  completed?: string;
 }
 
 export interface CalendarEvent {
   id: string;
   summary: string;
-  start: string; // ISO timestamp
+  start: string;
   end: string;
   location?: string;
   hangoutLink?: string;
@@ -39,28 +42,33 @@ export interface DriveFile {
   ownedByMe?: boolean;
 }
 
-export type TasksVariant = "current" | "today" | "done";
 export type CalendarVariant = "today" | "thisWeek" | "nextWeek";
 export type DriveVariant = "recent" | "myDrive" | "sharedDrives";
 
 async function authedFetch(
   userId: string,
   url: string,
+  init?: RequestInit,
 ): Promise<unknown | null> {
   const accessToken = await getGoogleAccessToken(userId);
   if (!accessToken) return null;
 
   const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+    ...init,
+    headers: {
+      ...(init?.headers ?? {}),
+      Authorization: `Bearer ${accessToken}`,
+    },
     cache: "no-store",
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "<unreadable>");
     console.error(
-      `[google/api] ${res.status} ${url} — ${body.slice(0, 200)}`,
+      `[google/api] ${res.status} ${init?.method ?? "GET"} ${url} — ${body.slice(0, 200)}`,
     );
     return null;
   }
+  if (res.status === 204) return {};
   return res.json();
 }
 
@@ -68,43 +76,28 @@ async function authedFetch(
 // Tasks
 // ──────────────────────────────────────────────────────────────────────────
 
-const TASKS_ROOT =
-  "https://tasks.googleapis.com/tasks/v1/lists/@default/tasks";
-
-function isSameSgDay(iso: string, ref: Date): boolean {
-  // Singapore is UTC+8, no DST.
-  const SGT = 8 * 60 * 60 * 1000;
-  const a = new Date(new Date(iso).getTime() + SGT);
-  const b = new Date(ref.getTime() + SGT);
-  return (
-    a.getUTCFullYear() === b.getUTCFullYear() &&
-    a.getUTCMonth() === b.getUTCMonth() &&
-    a.getUTCDate() === b.getUTCDate()
-  );
-}
-
-export async function listTasks(
-  userId: string,
-  variant: TasksVariant = "current",
-): Promise<TaskItem[] | null> {
-  const params = new URLSearchParams();
-  params.set("maxResults", "50");
-
-  if (variant === "done") {
-    // Completed in the last 7 days.
-    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    params.set("showCompleted", "true");
-    params.set("showHidden", "true");
-    params.set("completedMin", since.toISOString());
-  } else {
-    // 'current' + 'today' — incomplete only.
-    params.set("showCompleted", "false");
-  }
-
+/**
+ * Fetch the user's Google Tasks LISTS (e.g. "My Tasks", "Work", "Personal").
+ * One of them is always the default (`@default` alias resolves to its id).
+ */
+export async function listTaskLists(userId: string): Promise<TaskList[] | null> {
   const data = (await authedFetch(
     userId,
-    `${TASKS_ROOT}?${params.toString()}`,
-  )) as
+    "https://tasks.googleapis.com/tasks/v1/users/@me/lists?maxResults=100",
+  )) as { items?: Array<{ id: string; title: string }> } | null;
+  if (!data) return null;
+  return (data.items ?? []).map((l) => ({ id: l.id, title: l.title }));
+}
+
+/**
+ * Incomplete tasks in a specific list, ordered by Google's default (position).
+ */
+export async function listTasksInList(
+  userId: string,
+  listId: string,
+): Promise<TaskItem[] | null> {
+  const url = `https://tasks.googleapis.com/tasks/v1/lists/${encodeURIComponent(listId)}/tasks?showCompleted=false&maxResults=50`;
+  const data = (await authedFetch(userId, url)) as
     | {
         items?: Array<{
           id: string;
@@ -116,24 +109,35 @@ export async function listTasks(
       }
     | null;
   if (!data) return null;
-
-  let items = (data.items ?? []).map((t) => ({
+  return (data.items ?? []).map((t) => ({
     id: t.id,
+    listId,
     title: t.title,
     due: t.due,
     notes: t.notes,
     completed: t.completed,
   }));
+}
 
-  if (variant === "today") {
-    const now = new Date();
-    items = items.filter((t) => t.due && isSameSgDay(t.due, now));
-  } else if (variant === "done") {
-    // Sort done items by most-recently-completed first.
-    items.sort((a, b) => (b.completed ?? "").localeCompare(a.completed ?? ""));
-  }
-
-  return items;
+/**
+ * Mark a Google Task complete. PATCH with status='completed' + a completion
+ * timestamp. Google clears the task from the showCompleted=false list.
+ */
+export async function completeGoogleTask(
+  userId: string,
+  listId: string,
+  taskId: string,
+): Promise<boolean> {
+  const url = `https://tasks.googleapis.com/tasks/v1/lists/${encodeURIComponent(listId)}/tasks/${encodeURIComponent(taskId)}`;
+  const result = await authedFetch(userId, url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      status: "completed",
+      completed: new Date().toISOString(),
+    }),
+  });
+  return result !== null;
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -148,7 +152,6 @@ function calendarRange(variant: CalendarVariant): {
   const day = 24 * 60 * 60 * 1000;
 
   if (variant === "today") {
-    // End of today in Singapore (UTC+8).
     const SGT = 8 * 60 * 60 * 1000;
     const sgNow = new Date(now.getTime() + SGT);
     const sgEnd = new Date(sgNow);
@@ -164,7 +167,6 @@ function calendarRange(variant: CalendarVariant): {
       timeMax: new Date(now.getTime() + 7 * day).toISOString(),
     };
   }
-  // nextWeek
   return {
     timeMin: new Date(now.getTime() + 7 * day).toISOString(),
     timeMax: new Date(now.getTime() + 14 * day).toISOString(),
@@ -237,10 +239,8 @@ export async function listDriveFiles(
     url.searchParams.set("includeItemsFromAllDrives", "true");
     url.searchParams.set("supportsAllDrives", "true");
   } else if (variant === "myDrive") {
-    // corpora=user (default) — only user's own Drive files.
     qParts.push("'me' in owners");
   } else {
-    // sharedDrives — includes team-drive files + files shared with the user.
     url.searchParams.set("corpora", "allDrives");
     url.searchParams.set("includeItemsFromAllDrives", "true");
     url.searchParams.set("supportsAllDrives", "true");
@@ -256,6 +256,6 @@ export async function listDriveFiles(
   return data.files ?? [];
 }
 
-// Back-compat alias so older callers don't break during transition.
+// Back-compat alias used by anything that imported the old name.
 export const listRecentDriveFiles = (userId: string) =>
   listDriveFiles(userId, "recent");

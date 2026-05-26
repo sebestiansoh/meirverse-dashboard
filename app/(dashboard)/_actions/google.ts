@@ -1,32 +1,47 @@
 "use server";
 
 /**
- * Server actions for the Phase 2.4 dashboard widgets.
- *
- * Each widget calls the matching action on mount + on a 60s interval +
- * on tab change. Server-side authenticates via getCurrentUserContext,
- * then delegates to the typed wrappers in lib/google/api.ts.
+ * Server actions for the Phase 2.4 dashboard widgets (Google APIs side).
+ * Dashboard-native task assignment lives in _actions/tasks.ts.
  */
 
 import { getCurrentUserContext } from "@/lib/auth/user-context";
 import {
-  listTasks,
+  listTaskLists,
+  listTasksInList,
+  completeGoogleTask,
   listUpcomingEvents,
   listDriveFiles,
+  type TaskList,
   type TaskItem,
   type CalendarEvent,
   type DriveFile,
-  type TasksVariant,
   type CalendarVariant,
   type DriveVariant,
 } from "@/lib/google/api";
 
-export async function fetchMyTasks(
-  variant: TasksVariant = "current",
+export async function fetchMyTaskLists(): Promise<TaskList[] | null> {
+  const ctx = await getCurrentUserContext();
+  if (!ctx) return null;
+  return listTaskLists(ctx.userId);
+}
+
+export async function fetchMyTasksInList(
+  listId: string,
 ): Promise<TaskItem[] | null> {
   const ctx = await getCurrentUserContext();
   if (!ctx) return null;
-  return listTasks(ctx.userId, variant);
+  return listTasksInList(ctx.userId, listId);
+}
+
+export async function markGoogleTaskDone(
+  listId: string,
+  taskId: string,
+): Promise<{ ok: boolean }> {
+  const ctx = await getCurrentUserContext();
+  if (!ctx) return { ok: false };
+  const ok = await completeGoogleTask(ctx.userId, listId, taskId);
+  return { ok };
 }
 
 export async function fetchMyUpcomingEvents(
@@ -44,6 +59,3 @@ export async function fetchMyDriveFiles(
   if (!ctx) return null;
   return listDriveFiles(ctx.userId, variant);
 }
-
-// Back-compat — kept so existing imports keep working through the deploy.
-export const fetchMyRecentFiles = () => fetchMyDriveFiles("recent");
