@@ -15,6 +15,7 @@
     "db:stop": "supabase stop"
   },
   "dependencies": {
+    "@sentry/nextjs": "^10.54.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.1",
     "jose": "^6.2.3",
