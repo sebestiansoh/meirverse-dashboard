@@ -85,7 +85,9 @@ Still 🔴 until executed.
 
 ---
 
-## 2 · Permission model — Departments×Role vs per-user matrix 🔴
+## 2 · Permission model — Departments×Role vs per-user matrix 🟢
+
+**Closed 2026-05-26** by commit `777724d` — new `public.user_access` matrix (per-user · module · action · company) replaces `user_departments`. Helpers `is_super_admin()` and `has_access(module, action, company)` drive every RLS policy. Legacy `user_departments` survives as a compatibility view (`100500_legacy_departments_compat.sql`) so older code keeps working during the deprecation window.
 
 | Source | Says |
 |---|---|
@@ -100,7 +102,9 @@ The interim RLS-recursion fix (migration `20260525000004`) is still worth applyi
 
 ---
 
-## 3 · Database topology — 1 project vs 4 🟡 / 🔵
+## 3 · Database topology — 1 project vs 4 🟢 (Phase 1) / 🔵 (Phase 2)
+
+**Phase 1 closed 2026-05-26** by commit `777724d` — single Internal DB with `public` (dashboard) + `erp.*` + `hr.*` schemas, all sharing `auth.users`. No mirror tables. `internal-staging` still owed (Sebestian to action — Supabase dashboard create). Phase 2 (External DB + external-staging + Fly.io gateway) intentionally deferred.
 
 | Source | Says |
 |---|---|
@@ -121,7 +125,9 @@ the same session.
 
 ---
 
-## 4 · Org units — 12 entities vs 9 (post-D-D) 🟡
+## 4 · Org units — 12 entities vs 9 (post-D-D) 🟢
+
+**Closed 2026-05-26** by commits `777724d` (seed) + decisions **D-D** (Cubo / Caerus / MADE added → 9) and **D-E** (Property Management + Maintenance fold as modules inside Meir Collective + GCB respectively). The Mandate at `~/Projects/CLAUDE.md` should rev to v1.6 to absorb D-D when convenient.
 
 | Source | Org units / entities |
 |---|---|
@@ -164,7 +170,9 @@ the same session.
 
 ---
 
-## 6 · `company` column on every primary table 🟡
+## 6 · `company` column on every primary table 🟢
+
+**Closed 2026-05-26** by commit `777724d` — every primary table in `public`, `erp.*`, `hr.*` carries a `company` column FK'd to `public.company`. Holdco-scoped shared-services rows use the `holdco` sentinel.
 
 | Source | Says |
 |---|---|
@@ -224,7 +232,9 @@ Out of scope for today. Recorded for completeness.
 
 ---
 
-## 10 · Tooling — Sentry · UptimeRobot · GitHub Actions CI 🟡
+## 10 · Tooling — Sentry · UptimeRobot · GitHub Actions CI 🟡 (Sentry + UptimeRobot pending; CI 🟢)
+
+**CI portion closed 2026-05-26** by commit `a885b3f` — GitHub Actions runs typecheck + lint + build on every PR and `main` push. Sentry + UptimeRobot still on the punchlist for this session.
 
 | Source | Says |
 |---|---|

@@ -98,16 +98,14 @@ export const CRM_AUDIENCES: readonly CrmAudience[] = [
     requiredDepartments: ["operations", "accounting"],
     // Scaffolded 2026-05-25 (sebestiansoh/meirverse-gcb-erp). Phase 0 SSO
     // landing verifies; module work begins Phase 1 (Items module first).
+    // Per D-E + D-F: Property Management + Property Maintenance live as
+    // MODULES inside this ERP — no separate `propertymgmt.` subdomain.
     hidden: true,
   },
-  {
-    aud: "property-mgmt",
-    subdomain: "propertymgmt.meirverse.app",
-    displayName: "Property Management",
-    cluster: "cluster-3",
-    requiredDepartments: ["operations"],
-    hidden: true,
-  },
+  // Property Management tile removed 2026-05-26 per CLAUDE-ALIGNMENT.md
+  // decision D-F: it's not a separate Child — it's a Meir-Collective-scoped
+  // module inside the ERP (Internal), cross-linked to the Leads Child on
+  // the External Dashboard (`leads.meirverse.world`, Phase 2).
 
   // Cluster 4 — financial / underwriting
   {
