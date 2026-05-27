@@ -5,6 +5,9 @@ import { QuickLaunchTile } from "./quick-launch-tile";
 import { TasksWidget } from "./_widgets/tasks-widget";
 import { CalendarWidget } from "./_widgets/calendar-widget";
 import { DocumentsWidget } from "./_widgets/documents-widget";
+import { OutlookCalendarWidget } from "./_widgets/outlook-calendar-widget";
+import { MicrosoftTodoWidget } from "./_widgets/microsoft-todo-widget";
+import { OneDriveWidget } from "./_widgets/onedrive-widget";
 
 /**
  * Dashboard home. The route-group layout already enforced auth; we use
@@ -42,18 +45,29 @@ export default async function Home() {
         </h1>
         <p className="font-sans text-sm text-muted">
           Phase 2.4 · Google Tasks · Calendar · Drive widgets live below.
-          Phase 2.5 · SSO bridge live. Remaining universal modules — inbox,
-          markets, directory — arrive across Phase 2.6+ per the build
-          sequence in <code className="font-sans text-xs">ARCHITECTURE.md §7</code>.
+          Phase 2.5 · SSO bridge live. Phase 2.6 · Microsoft 365 widgets
+          (Outlook Calendar · To Do · OneDrive) alongside the Google
+          trio. Remaining universal modules — inbox, markets, directory —
+          arrive across Phase 2.7+ per the build sequence in
+          {" "}<code className="font-sans text-xs">ARCHITECTURE.md §7</code>.
         </p>
       </header>
 
       <section className="space-y-4">
-        <h2 className="font-serif text-xl">Today</h2>
+        <h2 className="font-serif text-xl">Today · Google</h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <TasksWidget />
           <CalendarWidget />
           <DocumentsWidget />
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-serif text-xl">Today · Microsoft</h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <MicrosoftTodoWidget />
+          <OutlookCalendarWidget />
+          <OneDriveWidget />
         </div>
       </section>
 

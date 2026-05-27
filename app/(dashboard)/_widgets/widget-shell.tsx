@@ -107,3 +107,22 @@ export function WidgetConnectGoogle() {
     </div>
   );
 }
+
+export function WidgetConnectMicrosoft() {
+  return (
+    <div className="space-y-3">
+      <p className="font-sans text-sm text-muted">
+        Connect your Microsoft account to enable this widget.
+      </p>
+      <a
+        href="/login"
+        className="inline-block font-sans text-xs uppercase tracking-[0.15em] text-accent hover:text-ink transition-colors"
+      >
+        Connect Microsoft →
+      </a>
+      <p className="font-sans text-xs text-muted/60">
+        You&apos;ll be re-prompted to grant Calendar · To Do · OneDrive access.
+      </p>
+    </div>
+  );
+}

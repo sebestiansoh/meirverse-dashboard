@@ -3,6 +3,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isEmailDomainAllowed } from "@/lib/auth/domain-check";
 import { storeGoogleTokens } from "@/lib/google/store-tokens";
 import { GOOGLE_OAUTH_SCOPES } from "@/lib/google/scopes";
+import { storeMicrosoftTokens } from "@/lib/microsoft/store-tokens";
+import { MICROSOFT_OAUTH_SCOPES } from "@/lib/microsoft/scopes";
 
 /**
  * OAuth callback. Supabase redirects the browser here with `?code=…`
@@ -48,25 +50,54 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Capture the Google OAuth refresh token if Google issued one. This
-  // only fires on consent-granting sign-ins (access_type=offline +
-  // prompt=consent on the /login signInWithOAuth call). Subsequent
-  // sign-ins reuse the stored refresh token unless the user revoked.
+  // Capture the OAuth refresh token if the provider issued one. Only
+  // fires on consent-granting sign-ins (access_type=offline +
+  // prompt=consent for Google, offline_access scope + prompt=consent
+  // for Microsoft). Subsequent sign-ins reuse the stored refresh token
+  // unless the user revoked.
   //
-  // Failure is non-blocking — the user is signed in either way; Phase
-  // 2.4 widgets just show "connect Google" if no token is on file.
+  // Per-provider routing: data.session.user.app_metadata.provider tells
+  // us which OAuth provider just signed the user in, so we know which
+  // token table to write to. session.provider_refresh_token is the
+  // refresh token from whichever provider just completed — there's only
+  // ever one active provider context per session.
+  //
+  // Failure is non-blocking — the user is signed in either way; widgets
+  // just show "Connect …" if no token is on file.
   const providerRefresh = data.session.provider_refresh_token;
+  const provider = data.session.user.app_metadata?.provider;
+
   if (providerRefresh) {
     try {
-      await storeGoogleTokens({
-        userId: data.session.user.id,
-        refreshToken: providerRefresh,
-        accessToken: data.session.provider_token,
-        accessTokenExpiresIn: data.session.expires_in ?? 3600,
-        scopes: GOOGLE_OAUTH_SCOPES,
-      });
+      if (provider === "azure") {
+        // Microsoft tenant id lives in the id_token `tid` claim; we don't
+        // re-parse the id_token here, so this stays null on first capture.
+        // refresh-access-token.ts falls back to the `common` endpoint when
+        // tenant_id is null — works for both single-tenant and multi-tenant
+        // app registrations.
+        await storeMicrosoftTokens({
+          userId: data.session.user.id,
+          refreshToken: providerRefresh,
+          accessToken: data.session.provider_token,
+          accessTokenExpiresIn: data.session.expires_in ?? 3600,
+          scopes: MICROSOFT_OAUTH_SCOPES,
+        });
+      } else {
+        // Default branch — Google (or any future provider we add to the
+        // dashboard's Google-scoped token table).
+        await storeGoogleTokens({
+          userId: data.session.user.id,
+          refreshToken: providerRefresh,
+          accessToken: data.session.provider_token,
+          accessTokenExpiresIn: data.session.expires_in ?? 3600,
+          scopes: GOOGLE_OAUTH_SCOPES,
+        });
+      }
     } catch (err) {
-      console.error("[auth/callback] google token capture failed:", err);
+      console.error(
+        `[auth/callback] ${provider ?? "oauth"} token capture failed:`,
+        err,
+      );
     }
   }
 

@@ -45,24 +45,27 @@ const nextConfig = {
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
               // Supabase (HTTPS + WebSocket for realtime), Google OAuth,
-              // Sentry ingest endpoints.
-              // Phase 2.4 adds Google APIs (server-side fetches happen
-              // from Node and bypass CSP, but the OAuth redirect URLs do
-              // go through here). oauth2.googleapis.com is the token
-              // refresh endpoint; *.googleapis.com covers Tasks/Calendar/
-              // Drive ingest if we ever proxy through the client.
+              // Microsoft OAuth + Graph, Sentry ingest endpoints.
+              // Server-side API fetches (Node) bypass CSP entirely; the
+              // entries below cover OAuth redirects and any client-side
+              // proxy paths we might add later.
               "connect-src 'self' " +
                 "https://xwrthxehkrwmikhzqhma.supabase.co " +
                 "wss://xwrthxehkrwmikhzqhma.supabase.co " +
                 "https://accounts.google.com " +
                 "https://oauth2.googleapis.com " +
                 "https://*.googleapis.com " +
+                "https://login.microsoftonline.com " +
+                "https://graph.microsoft.com " +
                 "https://*.ingest.sentry.io " +
                 "https://*.ingest.us.sentry.io",
               // Modern equivalent of X-Frame-Options: DENY (kept for legacy).
               "frame-ancestors 'none'",
-              // Forms can only post to self + Google (OAuth) + Supabase (callback).
-              "form-action 'self' https://accounts.google.com https://xwrthxehkrwmikhzqhma.supabase.co",
+              // Forms can only post to self + Google/Microsoft OAuth + Supabase callback.
+              "form-action 'self' " +
+                "https://accounts.google.com " +
+                "https://login.microsoftonline.com " +
+                "https://xwrthxehkrwmikhzqhma.supabase.co",
               "base-uri 'self'",
             ].join("; "),
           },

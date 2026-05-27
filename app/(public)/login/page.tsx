@@ -4,14 +4,16 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useState, Suspense } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { GOOGLE_OAUTH_SCOPES } from "@/lib/google/scopes";
+import { MICROSOFT_OAUTH_SCOPES } from "@/lib/microsoft/scopes";
 
 const errorMessages: Record<string, string> = {
-  oauth_failed: "Google sign-in could not start. Please try again.",
+  oauth_failed: "Sign-in could not start. Please try again.",
   oauth_cancelled: "Sign-in was cancelled before completion.",
   domain_not_allowed:
     "Your email domain is not on the Meirverse allowlist. Contact Sebestian if you believe this is an error.",
   session_failed: "Could not establish a session. Please try again.",
-  missing_code: "No authorisation code was returned by Google. Please try again.",
+  missing_code:
+    "No authorisation code was returned by the provider. Please try again.",
 };
 
 function LoginInner() {
@@ -25,7 +27,7 @@ function LoginInner() {
     const supabase = createSupabaseBrowserClient();
     const hd = process.env.NEXT_PUBLIC_GOOGLE_PRIMARY_WORKSPACE_HD;
     // access_type=offline + prompt=consent → Google issues a refresh
-    // token (captured server-side in /auth/callback for Phase 2.4
+    // token (captured server-side in /auth/callback for the Phase 2.4
     // Tasks/Calendar/Drive integrations).
     const queryParams: Record<string, string> = {
       access_type: "offline",
@@ -45,7 +47,28 @@ function LoginInner() {
       setSigningIn(false);
       router.push("/login?error=oauth_failed");
     }
-    // On success the browser is redirected to Google by Supabase.
+  };
+
+  const signInWithMicrosoft = async () => {
+    setSigningIn(true);
+    const supabase = createSupabaseBrowserClient();
+    // Microsoft equivalent of access_type=offline is `offline_access`
+    // (already in MICROSOFT_OAUTH_SCOPES). `prompt=consent` forces
+    // re-consent on each sign-in so we capture a fresh refresh token —
+    // matches the Google flow's behaviour. Domain check still applies
+    // server-side in /auth/callback for the email returned.
+    const { error: signInError } = await supabase.auth.signInWithOAuth({
+      provider: "azure",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: { prompt: "consent" },
+        scopes: MICROSOFT_OAUTH_SCOPES,
+      },
+    });
+    if (signInError) {
+      setSigningIn(false);
+      router.push("/login?error=oauth_failed");
+    }
   };
 
   return (
@@ -78,11 +101,20 @@ function LoginInner() {
 
       <button
         type="button"
+        onClick={signInWithMicrosoft}
+        disabled={signingIn}
+        className="w-full rounded-md border border-ink bg-paper text-ink px-4 py-3 font-sans text-sm hover:bg-ink hover:text-paper disabled:opacity-50 transition-colors"
+      >
+        {signingIn ? "Redirecting…" : "Continue with Microsoft"}
+      </button>
+
+      <button
+        type="button"
         onClick={() => signInWithGoogle(true)}
         disabled={signingIn}
         className="block w-full text-center font-sans text-xs text-muted hover:text-ink transition-colors disabled:opacity-50"
       >
-        Use a venture-tenant account →
+        Use a Google venture-tenant account →
       </button>
 
       <p className="text-center font-sans text-xs text-muted">
