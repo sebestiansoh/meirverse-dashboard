@@ -3,8 +3,8 @@ import { getCurrentUserContext } from "@/lib/auth/user-context";
 import { visibleAudiencesFor } from "@/lib/auth/audiences";
 import { QuickLaunchTile } from "./quick-launch-tile";
 import { TasksWidget } from "./_widgets/tasks-widget";
-import { CalendarWidget } from "./_widgets/calendar-widget";
-import { DocumentsWidget } from "./_widgets/documents-widget";
+import { CalendarGadget } from "@/lib/gadgets/instances/google-calendar";
+import { DocumentsGadget } from "@/lib/gadgets/instances/google-drive";
 
 /**
  * Dashboard home. The route-group layout already enforced auth; we use
@@ -41,10 +41,15 @@ export default async function Home() {
             : "Welcome to the Meirverse Dashboard."}
         </h1>
         <p className="font-sans text-sm text-muted">
-          Phase 2.4 · Google Tasks · Calendar · Drive widgets live below.
-          Phase 2.5 · SSO bridge live. Remaining universal modules — inbox,
-          markets, directory — arrive across Phase 2.6+ per the build
-          sequence in <code className="font-sans text-xs">ARCHITECTURE.md §7</code>.
+          Phase 2.4 · Google Tasks · Calendar · Drive widgets live below —
+          Calendar + Drive are first-class instances of the
+          {" "}<code className="font-sans text-xs">Gadget Pattern</code>
+          {" "}(see <code className="font-sans text-xs">docs/gadget-pattern.md</code>),
+          ready for Microsoft + any future end-user-OAuth API to slot in
+          as config. Phase 2.5 · SSO bridge live. Remaining universal
+          modules — inbox, markets, directory — arrive across Phase 2.6+
+          per the build sequence in
+          {" "}<code className="font-sans text-xs">ARCHITECTURE.md §7</code>.
         </p>
       </header>
 
@@ -52,8 +57,8 @@ export default async function Home() {
         <h2 className="font-serif text-xl">Today</h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <TasksWidget />
-          <CalendarWidget />
-          <DocumentsWidget />
+          <CalendarGadget />
+          <DocumentsGadget />
         </div>
       </section>
 

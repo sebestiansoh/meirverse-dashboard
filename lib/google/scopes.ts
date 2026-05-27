@@ -16,4 +16,7 @@ export const GOOGLE_OAUTH_SCOPES = [
   "https://www.googleapis.com/auth/tasks",
   "https://www.googleapis.com/auth/calendar.events.readonly",
   "https://www.googleapis.com/auth/drive.readonly",
+  // NOTE: Keep was attempted on 2026-05-27 and reverted. The Keep API
+  // is service-account-DWD-only and rejects end-user OAuth scope
+  // requests as "invalid". See docs/gadget-pattern.md for the writeup.
 ].join(" ");
