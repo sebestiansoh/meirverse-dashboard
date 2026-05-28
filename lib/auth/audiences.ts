@@ -92,7 +92,10 @@ export const CRM_AUDIENCES: readonly CrmAudience[] = [
   // Cluster 3 — asset lifecycle
   {
     aud: "construction-erp",
-    subdomain: "gcb-erp.meirverse.app",
+    // Subdomain renamed gcb-erp./erp. → projects.meirverse.app per Principal
+    // decision 2026-05-28 (supersedes D-B's erp. target). aud claim unchanged
+    // (deliberately decoupled from the URL, so the ERP verifier needs no change).
+    subdomain: "projects.meirverse.app",
     displayName: "Construction ERP",
     cluster: "cluster-3",
     requiredDepartments: ["operations", "accounting"],
