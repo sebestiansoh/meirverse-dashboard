@@ -1,6 +1,8 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { MICROSOFT_OAUTH_SCOPES } from "@/lib/microsoft/scopes";
 
 /**
  * Shared card chrome for the Phase 2.4 widgets. Provides the
@@ -109,19 +111,43 @@ export function WidgetConnectGoogle() {
 }
 
 export function WidgetConnectMicrosoft() {
+  const [linking, setLinking] = useState(false);
+
+  // Per Mandate v1.7, Microsoft is a *secondary* grant layered onto the
+  // already-signed-in Google user — not a competing login. linkIdentity
+  // attaches the Azure identity to the current session; signInWithOAuth
+  // would replace it (signing the user out of Google). The flow=link-azure
+  // marker tells /auth/callback to store the returned refresh token in the
+  // Microsoft table — app_metadata.provider stays "google" on a link.
+  const connectMicrosoft = async () => {
+    setLinking(true);
+    const supabase = createSupabaseBrowserClient();
+    const { error } = await supabase.auth.linkIdentity({
+      provider: "azure",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?flow=link-azure`,
+        scopes: MICROSOFT_OAUTH_SCOPES,
+        queryParams: { prompt: "consent" },
+      },
+    });
+    if (error) setLinking(false);
+  };
+
   return (
     <div className="space-y-3">
       <p className="font-sans text-sm text-muted">
-        Connect your Microsoft account to enable this widget.
+        Connect your Microsoft 365 account to enable this widget.
       </p>
-      <a
-        href="/login"
-        className="inline-block font-sans text-xs uppercase tracking-[0.15em] text-accent hover:text-ink transition-colors"
+      <button
+        type="button"
+        onClick={connectMicrosoft}
+        disabled={linking}
+        className="inline-block font-sans text-xs uppercase tracking-[0.15em] text-accent hover:text-ink transition-colors disabled:opacity-50"
       >
-        Connect Microsoft →
-      </a>
+        {linking ? "Redirecting…" : "Connect Microsoft 365 →"}
+      </button>
       <p className="font-sans text-xs text-muted/60">
-        You&apos;ll be re-prompted to grant Calendar · To Do · OneDrive access.
+        Keeps you signed in with Google · grants Calendar · To Do · OneDrive access.
       </p>
     </div>
   );
