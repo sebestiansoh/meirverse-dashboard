@@ -4,7 +4,6 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useState, Suspense } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { GOOGLE_OAUTH_SCOPES } from "@/lib/google/scopes";
-import { MICROSOFT_OAUTH_SCOPES } from "@/lib/microsoft/scopes";
 
 const errorMessages: Record<string, string> = {
   oauth_failed: "Sign-in could not start. Please try again.",
@@ -49,28 +48,6 @@ function LoginInner() {
     }
   };
 
-  const signInWithMicrosoft = async () => {
-    setSigningIn(true);
-    const supabase = createSupabaseBrowserClient();
-    // Microsoft equivalent of access_type=offline is `offline_access`
-    // (already in MICROSOFT_OAUTH_SCOPES). `prompt=consent` forces
-    // re-consent on each sign-in so we capture a fresh refresh token —
-    // matches the Google flow's behaviour. Domain check still applies
-    // server-side in /auth/callback for the email returned.
-    const { error: signInError } = await supabase.auth.signInWithOAuth({
-      provider: "azure",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: { prompt: "consent" },
-        scopes: MICROSOFT_OAUTH_SCOPES,
-      },
-    });
-    if (signInError) {
-      setSigningIn(false);
-      router.push("/login?error=oauth_failed");
-    }
-  };
-
   return (
     <div className="max-w-md w-full space-y-6">
       <div className="text-center space-y-2">
@@ -97,15 +74,6 @@ function LoginInner() {
         className="w-full rounded-md bg-ink text-paper px-4 py-3 font-sans text-sm hover:bg-accent disabled:opacity-50 transition-colors"
       >
         {signingIn ? "Redirecting…" : "Continue with Google"}
-      </button>
-
-      <button
-        type="button"
-        onClick={signInWithMicrosoft}
-        disabled={signingIn}
-        className="w-full rounded-md border border-ink bg-paper text-ink px-4 py-3 font-sans text-sm hover:bg-ink hover:text-paper disabled:opacity-50 transition-colors"
-      >
-        {signingIn ? "Redirecting…" : "Continue with Microsoft"}
       </button>
 
       <button

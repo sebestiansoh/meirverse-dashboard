@@ -19,6 +19,10 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const providerError = url.searchParams.get("error");
+  // Set by the dashboard's "Connect Microsoft 365" linkIdentity flow. On a
+  // link, app_metadata.provider stays "google" (the primary), so this marker
+  // is the only reliable signal that the just-returned token is Azure's.
+  const flow = url.searchParams.get("flow");
 
   if (providerError) {
     const tag =
@@ -69,7 +73,7 @@ export async function GET(request: NextRequest) {
 
   if (providerRefresh) {
     try {
-      if (provider === "azure") {
+      if (flow === "link-azure" || provider === "azure") {
         // Microsoft tenant id lives in the id_token `tid` claim; we don't
         // re-parse the id_token here, so this stays null on first capture.
         // refresh-access-token.ts falls back to the `common` endpoint when
