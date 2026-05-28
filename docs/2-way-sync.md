@@ -1,5 +1,32 @@
 # Cross-CRM 2-way sync
 
+> ## ⚠ PHASE 2 CROSS-DB INFRASTRUCTURE ONLY
+>
+> **Do NOT use this for within-Internal-DB syncing — that's a direct SQL JOIN.**
+>
+> This document predates the DB consolidation (Alignment Conflict #3,
+> closed 2026-05-26 by `777724d`). HR, ERP, Underwriting, Finance, and
+> Inventory now all live as schemas inside the **single Internal DB**,
+> sharing one `auth.users`. Any pair of them that needs each other's
+> data reads it with a **direct SQL JOIN** (e.g. `hr.employees` ⋈
+> `erp.project_members`) — not an event round-trip. Emitting sync events
+> for a relationship that lives in the same database is a **System-of-Record
+> violation** per Mandate §Data model ("no caching, mirroring, or
+> duplication").
+>
+> The event-driven outbox/webhook pattern described below comes online
+> **only** when *both* of these are true:
+> 1. The **External DB** is provisioned (Phase 2), AND
+> 2. The **Fly.io API gateway** is brokering inter-DB calls (Conflict #8).
+>
+> Until then the `sync_outbound_events` / `sync_inbound_events` tables
+> (migration `20260525100300_sync_infrastructure.sql`) ship dormant — kept
+> as an audit surface and to avoid ripping the handlers out of the
+> `meirverse-hr` / `meirverse-gcb-erp` repos, where they are tagged
+> "Phase 2 cross-DB only." The examples below (HR ↔ Underwriting etc.)
+> describe the eventual **Internal ↔ External** crossings, not the
+> within-Internal-DB pairs they originally targeted.
+
 This doc is the **contract every Meirverse CRM implements** when it
 needs to push state to or accept state from a sibling CRM. Distinct
 from [`crm-data-pulls.md`](./crm-data-pulls.md), which covers on-demand
