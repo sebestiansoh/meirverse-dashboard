@@ -31,8 +31,9 @@ updated in place below.
 | D-C | **DB consolidation now** — provision ONE `internal` Supabase + ONE `internal-staging` (covers mandate's "from day one"). Retrofit migrations onto it. Drop the per-CRM Supabase-per-repo plan. | Conflicts #3, #6, #7 — moved from 🔴 → 🟡 (auto-align in progress this session). |
 | **D-D** | **Cubo / Caerus / MADE are independent org units.** ⚠ **Principal amendment to v1.5** — expands §Org units from 6 to 9. CLAUDE.md should rev to v1.6 with the three additions. | Conflict #4 — closes with 9 org units, not 6. |
 | **D-E** | **Property Maintenance** = scope inside Good Class Builders. **Property Management** = scope inside Meir Collective. Both populate Internal AND External dashboards as modules within existing org units. | Conflict #4 closes; Property Mgmt + Maint NOT separate org units. |
-| **D-F** | **No `propertymgmt.` subdomain.** Property Management functionally = extension of Leads (External `leads.meirverse.world`) cross-linked to ERP + Property Maintenance modules (Internal `erp.meirverse.app`). | Conflict #5 partial — `propertymgmt.meirverse.app` row deleted from inventory. |
+| **D-F** | **No `propertymgmt.` subdomain.** Property Management functionally = extension of Leads (External `leads.meirverse.world`) cross-linked to ERP + Property Maintenance modules (Internal `projects.meirverse.app` per D-H). | Conflict #5 partial — `propertymgmt.meirverse.app` row deleted from inventory. |
 | **D-G** | **Underwriting** = its own Internal Child at `underwriting.meirverse.app`, under v1.5's "and others" allowance. | Conflict #5 partial — Underwriting subdomain locked. |
+| **D-H** | **ERP subdomain = `projects.meirverse.app`** (2026-05-28). Renames the ERP from the earlier `erp.`/`gcb-erp.` target — **supersedes D-B's `erp.` target for this Child only**. SSO `aud` claim stays `construction-erp` (deliberately decoupled from the URL, so the ERP verifier is unchanged). Other D-B renames unaffected. | Conflict #1/#5 — ERP subdomain locked to `projects.`; ERP hosted 2026-05-28. |
 
 ### Principal amendment to v1.5 (D-D)
 
@@ -58,7 +59,7 @@ in §Org units), the alignment doc is authoritative for the 9.
 |---|---|---|
 | `meirverse.app` | Internal Dashboard (root) | Apex (post C-1) |
 | `crm.meirverse.app` | CRM (Cluster 2 deal pipeline consolidated — 4 stages internal) | Rebuild needed |
-| `erp.meirverse.app` | ERP (Construction + Property Management module + Property Maintenance module) | In progress — repo `meirverse-gcb-erp` to rename to `meirverse-erp` |
+| `projects.meirverse.app` | ERP (Construction + Property Management module + Property Maintenance module) | Hosted 2026-05-28 (D-H rename from `erp.`) — repo `meirverse-gcb-erp` |
 | `hr.meirverse.app` | HR | In progress — repo `meirverse-hr` |
 | `finance.meirverse.app` | Finance | Not started |
 | `inventory.meirverse.app` | Inventory | Not started |
@@ -156,7 +157,7 @@ the same session.
 | Current (CRM-INVENTORY v4.2) | Mandate-compliant |
 |---|---|
 | `hr.meirverse.app` | `hr.meirverse.app` ✓ |
-| `gcb-erp.meirverse.app` | `erp.meirverse.app` (mandate: one function, one subdomain) |
+| `gcb-erp.meirverse.app` | `projects.meirverse.app` (D-H 2026-05-28 — supersedes the earlier `erp.` target) |
 | `termsheet.` · `engagement.` · `prospect.` · `specsheet.` | likely **consolidate into `crm.meirverse.app`** with stages as routes inside (mandate forbids parallel subdomains for one function) |
 | `propertymgmt.meirverse.app` | depends on Conflict #4 resolution |
 | (none yet) | `finance.meirverse.app` (mandate lists; not yet built) |
@@ -166,7 +167,7 @@ the same session.
 
 **Decision (D-A, D-B, 2026-05-25):**
 - Underwriting kept as separate Child; subdomain TBD (likely `finance.` or its own name).
-- All renames piggyback the consolidation commit (D-B) — `gcb-erp.` → `erp.`, Cluster 2 → `crm.`, dashboard apex move all happen together AFTER the DB consolidation lands.
+- All renames piggyback the consolidation commit (D-B) — `gcb-erp.` → `projects.` (per **D-H**, 2026-05-28; was `erp.`), Cluster 2 → `crm.`, dashboard apex move all happen together AFTER the DB consolidation lands.
 
 ---
 
